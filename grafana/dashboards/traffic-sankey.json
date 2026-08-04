@@ -1,0 +1,427 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Sankey with dimension switch + filters (exporter / protocol / port / CIDR)",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "ClickHouse",
+      "description": "Left=source dimension, right=destination. Nodes outside Top N are aggregated as Other. Controlled by top variables.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 20,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "color": "multi",
+        "layoutIterations": 32,
+        "nodePadding": 18,
+        "nodeWidth": 18,
+        "showText": true
+      },
+      "pluginVersion": "1.1.4",
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "WITH\n    flows AS\n    (\n        SELECT\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n               IPv6NumToString(sampler_address)) AS exporter,\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n               IPv6NumToString(src_addr)) AS src_ip,\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n               IPv6NumToString(dst_addr)) AS dst_ip,\n            ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) AS protocol,\n            concat(\n                ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n                '/',\n                toString(dst_port)\n            ) AS dst_service,\n            bytes * if(sampling_rate = 0, 1, sampling_rate) AS traffic\n        FROM $table\n        WHERE $timeFilter\n          AND ('$exporter' = 'All' OR if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n               IPv6NumToString(sampler_address)) = '$exporter')\n          AND ('$protocol' = 'All' OR ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) = '$protocol')\n          AND ('$dst_port' = 'All' OR toString(dst_port) = '$dst_port')\n          AND (\n                '$src_net' = ''\n             OR (\n                    etype = 2048\n                AND isIPAddressInRange(\n                        IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n                        '$src_net'\n                    )\n                )\n          )\n          AND (\n                '$dst_net' = ''\n             OR (\n                    etype = 2048\n                AND isIPAddressInRange(\n                        IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n                        '$dst_net'\n                    )\n                )\n          )\n    ),\n    labeled AS\n    (\n        SELECT\n            multiIf(\n                '$dimension' = 'exp_dst', exporter,\n                '$dimension' = 'src_port', src_ip,\n                '$dimension' = 'proto_port', protocol,\n                '$dimension' = 'exp_src', exporter,\n                src_ip\n            ) AS src_node,\n            multiIf(\n                '$dimension' = 'exp_dst', dst_ip,\n                '$dimension' = 'src_port', dst_service,\n                '$dimension' = 'proto_port', dst_service,\n                '$dimension' = 'exp_src', src_ip,\n                dst_ip\n            ) AS dst_node,\n            traffic\n        FROM flows\n    ),\n    top_src AS\n    (\n        SELECT src_node\n        FROM labeled\n        GROUP BY src_node\n        ORDER BY sum(traffic) DESC\n        LIMIT toUInt64OrZero('$topn')\n    ),\n    top_dst AS\n    (\n        SELECT dst_node\n        FROM labeled\n        GROUP BY dst_node\n        ORDER BY sum(traffic) DESC\n        LIMIT toUInt64OrZero('$topn')\n    )\nSELECT\n    if(src_node IN (SELECT src_node FROM top_src), src_node, 'Other') AS source,\n    if(dst_node IN (SELECT dst_node FROM top_dst), dst_node, 'Other') AS destination,\n    sum(traffic) AS traffic\nFROM labeled\nGROUP BY source, destination\nHAVING traffic > 0\nORDER BY traffic DESC\nLIMIT 300",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ],
+      "title": "Sankey ($dimension | Top $topn + Other)",
+      "type": "netsage-sankey-panel"
+    },
+    {
+      "datasource": "ClickHouse",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traffic_mib"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "MiB"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) AS exporter,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n       IPv6NumToString(src_addr)) AS source,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n       IPv6NumToString(dst_addr)) AS destination,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    dst_port,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    round(sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) / 1048576, 2) AS traffic_mib,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND ('$exporter' = 'All' OR if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) = '$exporter')\n  AND ('$protocol' = 'All' OR ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) = '$protocol')\n  AND ('$dst_port' = 'All' OR toString(dst_port) = '$dst_port')\n  AND (\n        '$src_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '$src_net'))\n  )\n  AND (\n        '$dst_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '$dst_net'))\n  )\nGROUP BY exporter, source, destination, protocol, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$detail_rows')",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ],
+      "title": "Top $detail_rows Details (filtered)",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "netflow",
+    "sankey",
+    "goflow2"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "SrcIP → DstIP",
+          "value": "src_dst"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Dimension",
+        "multi": false,
+        "name": "dimension",
+        "options": [
+          {
+            "selected": true,
+            "text": "SrcIP → DstIP",
+            "value": "src_dst"
+          },
+          {
+            "selected": false,
+            "text": "Exporter → DstIP",
+            "value": "exp_dst"
+          },
+          {
+            "selected": false,
+            "text": "Exporter → SrcIP",
+            "value": "exp_src"
+          },
+          {
+            "selected": false,
+            "text": "SrcIP → DstPort",
+            "value": "src_port"
+          },
+          {
+            "selected": false,
+            "text": "Proto → DstPort",
+            "value": "proto_port"
+          }
+        ],
+        "query": "src_dst,exp_dst,exp_src,src_port,proto_port",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "12",
+          "value": "12"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Top N",
+        "multi": false,
+        "name": "topn",
+        "options": [
+          {
+            "selected": false,
+            "text": "8",
+            "value": "8"
+          },
+          {
+            "selected": true,
+            "text": "12",
+            "value": "12"
+          },
+          {
+            "selected": false,
+            "text": "20",
+            "value": "20"
+          },
+          {
+            "selected": false,
+            "text": "30",
+            "value": "30"
+          }
+        ],
+        "query": "8,12,20,30",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "10",
+          "value": "10"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Detail rows",
+        "multi": false,
+        "name": "detail_rows",
+        "options": [
+          {
+            "selected": true,
+            "text": "10",
+            "value": "10"
+          },
+          {
+            "selected": false,
+            "text": "20",
+            "value": "20"
+          },
+          {
+            "selected": false,
+            "text": "30",
+            "value": "30"
+          },
+          {
+            "selected": false,
+            "text": "50",
+            "value": "50"
+          },
+          {
+            "selected": false,
+            "text": "100",
+            "value": "100"
+          }
+        ],
+        "query": "10,20,30,50,100",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "allValue": "All",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "All"
+        },
+        "datasource": "ClickHouse",
+        "definition": "SELECT DISTINCT if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))), IPv6NumToString(sampler_address)) AS exporter FROM flows_raw WHERE date >= today() - 7 ORDER BY exporter",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Exporter",
+        "multi": false,
+        "name": "exporter",
+        "options": [],
+        "query": "SELECT DISTINCT if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))), IPv6NumToString(sampler_address)) AS exporter FROM flows_raw WHERE date >= today() - 7 ORDER BY exporter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "All",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "All"
+        },
+        "datasource": "ClickHouse",
+        "definition": "SELECT DISTINCT ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) AS protocol FROM flows_raw WHERE date >= today() - 7 ORDER BY protocol",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Protocol",
+        "multi": false,
+        "name": "protocol",
+        "options": [],
+        "query": "SELECT DISTINCT ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) AS protocol FROM flows_raw WHERE date >= today() - 7 ORDER BY protocol",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "All",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "All"
+        },
+        "datasource": "ClickHouse",
+        "definition": "SELECT toString(dst_port) AS dst_port FROM flows_raw WHERE date >= today() - 7 GROUP BY dst_port ORDER BY sum(bytes) DESC LIMIT 40",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Dst Port",
+        "multi": false,
+        "name": "dst_port",
+        "options": [],
+        "query": "SELECT toString(dst_port) AS dst_port FROM flows_raw WHERE date >= today() - 7 GROUP BY dst_port ORDER BY sum(bytes) DESC LIMIT 40",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "label": "Src CIDR",
+        "name": "src_net",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "hide": 0,
+        "label": "Dst CIDR",
+        "name": "dst_net",
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Traffic Sankey",
+  "uid": "flow-sankey",
+  "version": 3,
+  "weekStart": ""
+}

@@ -1,0 +1,7 @@
+# ignore local env / editor junk
+.env
+*.log
+.DS_Store
+
+# LDAP bind secrets — keep ldap.toml.example only in git
+grafana/ldap.toml

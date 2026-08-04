@@ -1,0 +1,108 @@
+# GoFlow2 → Kafka → ClickHouse → Grafana
+# Based on netsampler/goflow2 compose/kcg (adapted for standalone deploy)
+#
+# Listen:  NetFlow/IPFIX UDP 2055, sFlow UDP 6343
+# UI:      http://<host>:3030  (admin / admin)
+# CH HTTP: http://<host>:8123  (default / flow)
+
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    environment:
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_BROKER_ID: "1"
+      KAFKA_NODE_ID: "1"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: IB
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,IB:PLAINTEXT
+      KAFKA_LISTENERS: CONTROLLER://:9093,BROKER://:9092,IB://:9094
+      KAFKA_ADVERTISED_LISTENERS: BROKER://kafka:9092,IB://:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  goflow2:
+    image: ghcr.io/netsampler/goflow2:v2.2.6
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "2055:2055/udp"   # NetFlow v5/v9 / IPFIX
+      - "6343:6343/udp"   # sFlow
+      - "8080:8080"       # Prometheus metrics
+    restart: unless-stopped
+    command:
+      - -transport=kafka
+      - -transport.kafka.brokers=kafka:9092
+      - -transport.kafka.topic=flows
+      - -format=bin
+
+  db:
+    image: clickhouse/clickhouse-server:25.11-alpine
+    environment:
+      CLICKHOUSE_DO_NOT_CHOWN: "1"
+      CLICKHOUSE_PASSWORD: flow
+    ports:
+      - "8123:8123"   # HTTP
+      - "9000:9000"   # native (optional)
+    restart: unless-stopped
+    volumes:
+      - ./clickhouse:/docker-entrypoint-initdb.d/
+      - ./clickhouse/flow.proto:/var/lib/clickhouse/format_schemas/flow.proto:ro
+      - ./clickhouse/protocols.csv:/var/lib/clickhouse/user_files/protocols.csv:ro
+      - ch_data:/var/lib/clickhouse
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: vertamedia-clickhouse-datasource,netsage-sankey-panel
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: netsage-sankey-panel
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # LDAP (edit ./grafana/ldap.toml). Local admin still works until you disable it.
+      GF_AUTH_LDAP_ENABLED: "true"
+      GF_AUTH_LDAP_CONFIG_FILE: /etc/grafana/ldap.toml
+      GF_AUTH_LDAP_ALLOW_SIGN_UP: "true"
+      # Optional after LDAP works: set to "false" to force LDAP-only logins
+      # GF_AUTH_DISABLE_LOGIN_FORM: "false"
+    ports:
+      # 3030 避免与 ntopng 默认 3000 冲突
+      - "3030:3000"
+    restart: unless-stopped
+    volumes:
+      - ./grafana/datasources-ch.yml:/etc/grafana/provisioning/datasources/datasources-ch.yml:ro
+      - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/ldap.toml:/etc/grafana/ldap.toml:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - db
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+volumes:
+  ch_data:
+  grafana_data:

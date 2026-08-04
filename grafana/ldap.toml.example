@@ -1,0 +1,58 @@
+# Grafana LDAP config — fill in your AD/LDAP values, then:
+#   cp ldap.toml.example ldap.toml
+#   edit ldap.toml
+#   cd .. && sudo docker compose up -d grafana
+#
+# Do NOT commit real bind passwords.
+# Docs: https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/ldap/
+
+[[servers]]
+# ldap://host:389  or  ldaps://host:636
+host = "ldap.example.com"
+port = 389
+use_ssl = false
+start_tls = false
+ssl_skip_verify = false
+
+# Read-only bind account (service account)
+bind_dn = "CN=svc-grafana,OU=Service,DC=example,DC=com"
+bind_password = "CHANGE_ME"
+
+# Search base
+search_base_dns = ["DC=example,DC=com"]
+
+# AD common: sAMAccountName. OpenLDAP often uses uid.
+search_filter = "(sAMAccountName=%s)"
+
+# Optional: only users in a group (uncomment & set DN)
+# group_search_filter = "(&(objectClass=group)(member:1.2.840.113556.1.4.1941:=%s))"
+# group_search_filter_user_attribute = "distinguishedName"
+# group_search_base_dns = ["DC=example,DC=com"]
+
+[servers.attributes]
+name = "givenName"
+surname = "sn"
+username = "sAMAccountName"
+member_of = "memberOf"
+email = "mail"
+
+# Map AD groups → Grafana org roles (Admin / Editor / Viewer)
+# Replace group DNs with yours. First match wins for org_role.
+[[servers.group_mappings]]
+group_dn = "CN=Grafana-Admins,OU=Groups,DC=example,DC=com"
+org_role = "Admin"
+# grafana_admin = true
+
+[[servers.group_mappings]]
+group_dn = "CN=Grafana-Editors,OU=Groups,DC=example,DC=com"
+org_role = "Editor"
+
+[[servers.group_mappings]]
+group_dn = "CN=Grafana-Viewers,OU=Groups,DC=example,DC=com"
+org_role = "Viewer"
+
+# Catch-all: any authenticated LDAP user becomes Viewer
+# (comment out if you only want mapped groups)
+[[servers.group_mappings]]
+group_dn = "*"
+org_role = "Viewer"
