@@ -97,6 +97,13 @@ for _ in $(seq 1 60); do
 done
 [[ "${ok}" -eq 1 ]] || log "WARN: ClickHouse not ready yet; check: docker compose logs db"
 
+# Well-known port → service name (safe on existing volumes)
+if [[ "${ok}" -eq 1 ]]; then
+  log "ensuring services dictionary..."
+  run_compose exec -T db bash /docker-entrypoint-initdb.d/init_services.sh \
+    || log "WARN: services dictionary init failed (map panels still work; service names may be port-only)"
+fi
+
 if [[ "${DO_GEOIP}" -eq 1 ]]; then
   log "loading GeoIP (may take several minutes)..."
   run_compose exec -T db bash /docker-entrypoint-initdb.d/setup_geoip.sh \

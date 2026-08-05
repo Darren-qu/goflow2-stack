@@ -15,6 +15,16 @@ clickhouse client -n <<-EOSQL
     SOURCE (FILE(path '/var/lib/clickhouse/user_files/protocols.csv' format 'CSVWithNames'))
     LIFETIME(3600);
 
+    CREATE DICTIONARY IF NOT EXISTS dictionaries.services (
+        port UInt16,
+        name String,
+        category String
+    )
+    PRIMARY KEY port
+    LAYOUT(FLAT())
+    SOURCE (FILE(path '/var/lib/clickhouse/user_files/services.csv' format 'CSVWithNames'))
+    LIFETIME(3600);
+
     CREATE TABLE IF NOT EXISTS flows
     (
         time_received_ns UInt64,
