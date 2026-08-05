@@ -71,9 +71,7 @@ cd goflow2-stack
       一眼看概况：总量 / 趋势 / 协议 / Top 源·目的·服务（无筛选、无 Sankey、无地图）
     - **Traffic Sankey**（分析流向）：`/d/flow-sankey`（含维度与过滤变量）
     - **Traffic Geo Map**（公网地理）：`/d/flow-geo-map`
-    - **IP Flow Lookup**（单 IP 查询）：`/d/flow-ip-lookup`  
-      用端口推断应用（HTTPS/DNS/SSH…）+ 对端 GeoIP，尽量回答「访问了什么」。  
-      **说明：NetFlow 本身没有域名/URL**；若要真实域名需 DNS/SNI 旁路采集。
+    - **IP Flow Lookup**（单 IP 查询）：`/d/flow-ip-lookup`（填 IP，可选 As Source/Destination/Any）
     - `viz-ch` / `perfs`：GoFlow2 官方示例
 
 Sankey 过滤变量（仅 Sankey 页）：
