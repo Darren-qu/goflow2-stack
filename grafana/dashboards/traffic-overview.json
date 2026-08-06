@@ -1,5 +1,7 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "description": "At-a-glance traffic overview. Scope: All / East-West (private↔private) / North-South (private↔public).",
   "editable": true,
   "fiscalYearStartMonth": 0,
@@ -46,18 +48,39 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
           "unit": "decbytes"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name"
       },
       "targets": [
@@ -79,18 +102,39 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
       "id": 2,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name"
       },
       "targets": [
@@ -112,18 +156,39 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
       "id": 3,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name"
       },
       "targets": [
@@ -145,18 +210,39 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "semi-dark-green", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-green",
+                "value": null
+              }
+            ]
+          },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
       "id": 4,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name"
       },
       "targets": [
@@ -166,7 +252,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT uniqExact(src_addr) AS srcs\nFROM $table\nWHERE $timeFilter\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND etype = 2048\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND (\n        (\n          (isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n        OR (\n          NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n      )\n    )\n  )",
+          "query": "SELECT uniqExact(src_addr) AS srcs\nFROM $table\nWHERE $timeFilter\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND etype = 2048\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND (\n        (\n          (isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n        OR (\n          NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n      )\n    )\n  )\n  AND (\n    '$scope' != 'ns'\n    OR (\n      isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n      OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n      OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n      OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n    )\n  )",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -178,7 +264,9 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "area",
             "fillOpacity": 25,
@@ -192,11 +280,27 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 4 },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 4
+      },
       "id": 10,
       "options": {
-        "legend": { "calcs": ["sum", "max"], "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "legend": {
+          "calcs": [
+            "sum",
+            "max"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "targets": [
         {
@@ -216,22 +320,44 @@
     {
       "datasource": "ClickHouse",
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "decbytes" },
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "decbytes"
+        },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 4 },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 4
+      },
       "id": 31,
       "options": {
-        "displayLabels": ["percent"],
+        "displayLabels": [
+          "percent"
+        ],
         "legend": {
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
-          "values": ["value", "percent"]
+          "values": [
+            "value",
+            "percent"
+          ]
         },
         "pieType": "donut",
-        "reduceOptions": { "calcs": [], "fields": "", "values": true },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "targets": [
         {
@@ -250,38 +376,81 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "East-West: private IPs. North-South: public IPs. All: any.",
+      "description": "East-West: private IPs. North-South: private sources (outbound). All: any.",
       "fieldConfig": {
         "defaults": {
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "src_ip" },
+            "matcher": {
+              "id": "byName",
+              "options": "src_ip"
+            },
             "properties": [
-              { "id": "displayName", "value": "Source IP" },
-              { "id": "custom.width", "value": 150 }
+              {
+                "id": "displayName",
+                "value": "Source IP"
+              },
+              {
+                "id": "custom.width",
+                "value": 150
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "traffic" },
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
             "properties": [
-              { "id": "unit", "value": "decbytes" },
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
               {
                 "id": "custom.cellOptions",
-                "value": { "mode": "gradient", "type": "gauge", "valueDisplayMode": "text" }
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
               }
             ]
           }
         ]
       },
-      "gridPos": { "h": 10, "w": 8, "x": 0, "y": 12 },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 0,
+        "y": 12
+      },
       "id": 20,
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "traffic" }]
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
       },
       "targets": [
         {
@@ -290,7 +459,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) AS src_ip,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND etype = 2048\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND (\n        (\n          (isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n        OR (\n          NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n      )\n    )\n  )\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND NOT (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n  )\nGROUP BY src_ip\nORDER BY traffic DESC\nLIMIT 10",
+          "query": "SELECT\n  if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) AS src_ip,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND etype = 2048\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND (\n        (\n          (isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n        OR (\n          NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n      )\n    )\n  )\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n  )\nGROUP BY src_ip\nORDER BY traffic DESC\nLIMIT 10",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -300,38 +469,81 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "East-West: private IPs. North-South: public IPs. All: any.",
+      "description": "East-West: private IPs. North-South: public destinations. All: any.",
       "fieldConfig": {
         "defaults": {
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "dst_ip" },
+            "matcher": {
+              "id": "byName",
+              "options": "dst_ip"
+            },
             "properties": [
-              { "id": "displayName", "value": "Dest IP" },
-              { "id": "custom.width", "value": 150 }
+              {
+                "id": "displayName",
+                "value": "Dest IP"
+              },
+              {
+                "id": "custom.width",
+                "value": 150
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "traffic" },
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
             "properties": [
-              { "id": "unit", "value": "decbytes" },
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
               {
                 "id": "custom.cellOptions",
-                "value": { "mode": "gradient", "type": "gauge", "valueDisplayMode": "text" }
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
               }
             ]
           }
         ]
       },
-      "gridPos": { "h": 10, "w": 8, "x": 8, "y": 12 },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 8,
+        "y": 12
+      },
       "id": 21,
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "traffic" }]
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
       },
       "targets": [
         {
@@ -352,32 +564,74 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "service" },
-            "properties": [{ "id": "displayName", "value": "Service" }]
+            "matcher": {
+              "id": "byName",
+              "options": "service"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Service"
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "traffic" },
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
             "properties": [
-              { "id": "unit", "value": "decbytes" },
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
               {
                 "id": "custom.cellOptions",
-                "value": { "mode": "gradient", "type": "gauge", "valueDisplayMode": "text" }
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
               }
             ]
           }
         ]
       },
-      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 12 },
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 16,
+        "y": 12
+      },
       "id": 30,
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "traffic" }]
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
       },
       "targets": [
         {
@@ -397,7 +651,11 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["netflow", "overview", "goflow2"],
+  "tags": [
+    "netflow",
+    "overview",
+    "goflow2"
+  ],
   "templating": {
     "list": [
       {
@@ -412,9 +670,21 @@
         "multi": false,
         "name": "scope",
         "options": [
-          { "selected": true, "text": "全部", "value": "all" },
-          { "selected": false, "text": "东西向 (内网↔内网)", "value": "ew" },
-          { "selected": false, "text": "南北向 (内网↔公网)", "value": "ns" }
+          {
+            "selected": true,
+            "text": "全部",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "东西向 (内网↔内网)",
+            "value": "ew"
+          },
+          {
+            "selected": false,
+            "text": "南北向 (内网↔公网)",
+            "value": "ns"
+          }
         ],
         "query": "全部 : all,东西向 (内网↔内网) : ew,南北向 (内网↔公网) : ns",
         "skipUrlSync": false,
@@ -422,11 +692,14 @@
       }
     ]
   },
-  "time": { "from": "now-1h", "to": "now" },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "browser",
   "title": "Traffic Overview",
   "uid": "flow-traffic-overview",
-  "version": 6,
+  "version": 7,
   "weekStart": ""
 }
