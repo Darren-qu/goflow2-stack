@@ -68,7 +68,7 @@ cd goflow2-stack
   - LDAP：已启用骨架，编辑 `grafana/ldap.toml` 后 `docker compose up -d grafana`（见 [grafana/LDAP.md](grafana/LDAP.md)）
   - 预置看板：
     - **Traffic Overview**（主大屏）：`/d/flow-traffic-overview`  
-      一眼看概况：总量 / 趋势 / 协议 / Top 源·目的·服务（无筛选、无 Sankey、无地图）
+      一眼看概况：总量 / 趋势 / 协议 / Top 源·目的·服务；顶部可筛 **全部 / 东西向(内网) / 南北向(公网)**
     - **Traffic Sankey**（分析流向）：`/d/flow-sankey`（含维度与过滤变量）
     - **Traffic Geo Map**（公网地理）：`/d/flow-geo-map`
     - **IP Flow Lookup**（单 IP 查询）：`/d/flow-ip-lookup`（填 IP，可选 As Source/Destination/Any）
