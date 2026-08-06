@@ -661,32 +661,32 @@
       {
         "current": {
           "selected": true,
-          "text": "全部",
+          "text": "All",
           "value": "all"
         },
         "hide": 0,
         "includeAll": false,
-        "label": "流量方向",
+        "label": "Direction",
         "multi": false,
         "name": "scope",
         "options": [
           {
             "selected": true,
-            "text": "全部",
+            "text": "All",
             "value": "all"
           },
           {
             "selected": false,
-            "text": "东西向 (内网↔内网)",
+            "text": "East-West (private)",
             "value": "ew"
           },
           {
             "selected": false,
-            "text": "南北向 (内网↔公网)",
+            "text": "North-South (public)",
             "value": "ns"
           }
         ],
-        "query": "全部 : all,东西向 (内网↔内网) : ew,南北向 (内网↔公网) : ns",
+        "query": "All : all,East-West (private) : ew,North-South (public) : ns",
         "skipUrlSync": false,
         "type": "custom"
       }
@@ -700,6 +700,6 @@
   "timezone": "browser",
   "title": "Traffic Overview",
   "uid": "flow-traffic-overview",
-  "version": 7,
+  "version": 8,
   "weekStart": ""
 }
