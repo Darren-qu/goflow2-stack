@@ -18,30 +18,29 @@
 | 要开箱 UI、少维护 | 优先考虑 **Akvorado** |
 | 要控采集/存储、接现有 Grafana / LDAP | 用本栈 |
 
-当前参考部署：`10.0.20.201`（Grafana **13.1.2**，ClickHouse 已有流数据与 GeoIP）。
+栈版本要点：Grafana **13.1.2**，ClickHouse 明细默认保留 **30 天**、5 分钟聚合 **180 天**。
 
 ---
 
 ## 快速开始
 
-仓库（内网 Gitea）：`http://10.0.20.22:3000/netadmin/goflow2-stack`  
-Git SSH：`ssh://git@10.0.20.22:2222/netadmin/goflow2-stack.git`
+仓库：[github.com/Darren-qu/goflow2-stack](https://github.com/Darren-qu/goflow2-stack)
 
 ```bash
-# 已装 Docker Compose v2，且能访问 Gitea
-curl -fsSL http://10.0.20.22:3000/netadmin/goflow2-stack/raw/branch/main/install.sh | bash
+# 已装 Docker Compose v2
+curl -fsSL https://raw.githubusercontent.com/Darren-qu/goflow2-stack/main/install.sh | bash
 
 # 顺带装 Docker（Debian/Ubuntu）
-WITH_DOCKER=1 curl -fsSL http://10.0.20.22:3000/netadmin/goflow2-stack/raw/branch/main/install.sh | bash
+WITH_DOCKER=1 curl -fsSL https://raw.githubusercontent.com/Darren-qu/goflow2-stack/main/install.sh | bash
 
 # 顺带导入 GeoIP（地图看板，较慢）
-WITH_GEOIP=1 curl -fsSL http://10.0.20.22:3000/netadmin/goflow2-stack/raw/branch/main/install.sh | bash
+WITH_GEOIP=1 curl -fsSL https://raw.githubusercontent.com/Darren-qu/goflow2-stack/main/install.sh | bash
 ```
 
 手动：
 
 ```bash
-git clone ssh://git@10.0.20.22:2222/netadmin/goflow2-stack.git
+git clone https://github.com/Darren-qu/goflow2-stack.git
 cd goflow2-stack
 cp .env.example .env          # 改默认密码
 ./deploy.sh                   # pull + up
@@ -182,7 +181,7 @@ GROUP BY table"
 - NetFlow / NetStream / IPFIX → `<本机IP>:2055`
 - sFlow → `<本机IP>:6343`
 
-华为 NetStream 可参考仓库外文档 `elk-netflow-setup/docs/huawei-firewall-netstream.md`（目标改成本栈 IP:2055）。
+华为 NetStream 可参考厂商文档或常见 NetStream 导出配置（目标改成本栈 IP:2055）。
 
 ```bash
 docker compose logs -f --tail=50 goflow2

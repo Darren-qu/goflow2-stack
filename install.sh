@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Bootstrap from GitHub → run deploy.sh
 #
-# Usage (after you push this repo):
-#   curl -fsSL https://raw.githubusercontent.com/<user>/goflow2-stack/main/install.sh | bash
-#   # or
-#   REPO_URL=https://github.com/<user>/goflow2-stack.git bash install.sh
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/Darren-qu/goflow2-stack/main/install.sh | bash
+#   WITH_DOCKER=1 curl -fsSL https://raw.githubusercontent.com/Darren-qu/goflow2-stack/main/install.sh | bash
+#   REPO_URL=git@github.com:Darren-qu/goflow2-stack.git bash install.sh
 #
 # Env:
-#   REPO_URL     git clone URL (edit default below before first publish)
+#   REPO_URL     git clone URL (default: GitHub HTTPS)
 #   BRANCH       default: main
 #   INSTALL_DIR  default: $HOME/goflow2-stack
 #   WITH_DOCKER  set to 1 to attempt Docker Engine install on Debian/Ubuntu
@@ -15,8 +15,7 @@
 
 set -euo pipefail
 
-# Default: internal Gitea (override with REPO_URL=...)
-REPO_URL="${REPO_URL:-ssh://git@10.0.20.22:2222/netadmin/goflow2-stack.git}"
+REPO_URL="${REPO_URL:-https://github.com/Darren-qu/goflow2-stack.git}"
 BRANCH="${BRANCH:-main}"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/goflow2-stack}"
 WITH_DOCKER="${WITH_DOCKER:-0}"
