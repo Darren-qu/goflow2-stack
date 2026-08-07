@@ -352,18 +352,17 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "Open IP Lookup",
-                    "url": "/d/flow-ip-lookup?orgId=1&var-ip=${__value.raw}&var-role=any&from=${__from}&to=${__to}",
-                    "targetBlank": false,
+                    "title": "Open IP Lookup →",
+                    "url": "/d/flow-ip-lookup?var-ip=${__value.text}&var-role=any&from=${__from}&to=${__to}",
+                    "targetBlank": true,
                     "oneClick": true
                   }
                 ]
               },
               {
-                "id": "color",
+                "id": "custom.cellOptions",
                 "value": {
-                  "mode": "fixed",
-                  "fixedColor": "blue"
+                  "type": "auto"
                 }
               }
             ]
@@ -863,6 +862,6 @@
   "timezone": "browser",
   "title": "IP Flow Lookup",
   "uid": "flow-ip-lookup",
-  "version": 3,
+  "version": 4,
   "weekStart": ""
 }
