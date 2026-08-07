@@ -347,16 +347,6 @@
               {
                 "id": "displayName",
                 "value": "Peer"
-              },
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open IP Lookup",
-                    "url": "/d/flow-ip-lookup?var-ip=${__value.text}&var-role=any&from=${__from}&to=${__to}",
-                    "targetBlank": true
-                  }
-                ]
               }
             ]
           },
@@ -433,7 +423,7 @@
       ],
       "title": "Top peers",
       "type": "table",
-      "description": "Click a peer IP, then click Open IP Lookup (opens a new tab)."
+      "description": "Peer IPs for this host. Change the IP variable above to investigate another address."
     },
     {
       "datasource": "ClickHouse",
@@ -856,6 +846,6 @@
   "timezone": "browser",
   "title": "IP Flow Lookup",
   "uid": "flow-ip-lookup",
-  "version": 6,
+  "version": 7,
   "weekStart": ""
 }
