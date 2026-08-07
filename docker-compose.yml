@@ -93,7 +93,7 @@ services:
       # Optional after LDAP works: set to "false" to force LDAP-only logins
       # GF_AUTH_DISABLE_LOGIN_FORM: "false"
     ports:
-      # 3030 避免与 ntopng 默认 3000 冲突（用户访问入口）
+      # Grafana UI on host port 3030 (container listens on 3000)
       - "${GRAFANA_HOST_PORT:-3030}:3000"
     restart: unless-stopped
     volumes:

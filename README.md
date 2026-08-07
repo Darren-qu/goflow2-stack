@@ -58,7 +58,8 @@ Wait ~30–60s for ClickHouse `clickhouse/create.sh` on first boot. The host mus
 |------|------|---------|
 | **UDP 2055** | `0.0.0.0` | NetFlow v5/v9 / IPFIX |
 | **UDP 6343** | `0.0.0.0` | sFlow |
-| **3030** | `0.0.0.0` | Grafana UI (avoids ntopng `:3000`) |
+| **3030** | `0.0.0.0` | Grafana UI |
+
 | 8123 / 9000 | `127.0.0.1` | ClickHouse HTTP / native |
 | 8080 | `127.0.0.1` | GoFlow2 metrics |
 | 9090 | `127.0.0.1` | Prometheus |
@@ -265,6 +266,5 @@ docker compose down -v      # wipe ClickHouse / Grafana data
 
 **Coexistence:**
 
-- **ntopng** on the same host: this stack uses **3030**; only one process can own UDP 2055/6343.
-- **Logstash** on the same host: do not share 2055.
+- **Logstash** (or another NetFlow collector) on the same host: do not share UDP 2055/6343.
 - **Akvorado:** pick one stack; no need for two ClickHouse flow pipelines.
