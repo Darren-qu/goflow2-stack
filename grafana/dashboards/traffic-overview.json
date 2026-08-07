@@ -377,7 +377,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "East-West: private IPs. North-South: private sources / public destinations. All: any.",
+      "description": "Select and copy IP text (Ctrl/Cmd+C). Traffic shown as bytes.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -411,6 +411,16 @@
               {
                 "id": "custom.width",
                 "value": 150
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              },
+              {
+                "id": "custom.filterable",
+                "value": true
               }
             ]
           },
@@ -423,14 +433,6 @@
               {
                 "id": "unit",
                 "value": "decbytes"
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge",
-                  "valueDisplayMode": "text"
-                }
               }
             ]
           }
@@ -470,7 +472,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "East-West: private IPs. North-South: public destinations. All: any.",
+      "description": "Select and copy IP text (Ctrl/Cmd+C). Traffic shown as bytes.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -504,6 +506,16 @@
               {
                 "id": "custom.width",
                 "value": 150
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              },
+              {
+                "id": "custom.filterable",
+                "value": true
               }
             ]
           },
@@ -516,14 +528,6 @@
               {
                 "id": "unit",
                 "value": "decbytes"
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "gauge",
-                  "valueDisplayMode": "text"
-                }
               }
             ]
           }
@@ -759,6 +763,6 @@
   "timezone": "browser",
   "title": "Traffic Overview",
   "uid": "flow-traffic-overview",
-  "version": 23,
+  "version": 24,
   "weekStart": ""
 }
