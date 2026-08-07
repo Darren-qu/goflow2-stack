@@ -60,7 +60,7 @@
               }
             ]
           },
-          "unit": "decbits"
+          "unit": "decbytes"
         },
         "overrides": []
       },
@@ -90,7 +90,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT sum(bytes * 8 * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )",
+          "query": "SELECT sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -262,7 +262,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Traffic over time split by as_source / as_destination / both",
+      "description": "Traffic rate (bits per second). Totals in tables remain in bytes.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -278,7 +278,7 @@
               "mode": "normal"
             }
           },
-          "unit": "decbits"
+          "unit": "bps"
         },
         "overrides": []
       },
@@ -307,7 +307,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "time_series",
-          "query": "SELECT\n    $timeSeries AS t,\n    multiIf(\n        if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n          AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip',\n        'both',\n        if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip',\n        'as_source',\n        'as_destination'\n    ) AS direction,\n    sum(bytes * 8 * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY t, direction\nORDER BY t",
+          "query": "SELECT\n    $timeSeries AS t,\n    multiIf(\n        if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n          AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip',\n        'both',\n        if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip',\n        'as_source',\n        'as_destination'\n    ) AS direction,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) * 8 / $interval AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY t, direction\nORDER BY t",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -370,7 +370,7 @@
             "properties": [
               {
                 "id": "unit",
-                "value": "decbits"
+                "value": "decbytes"
               },
               {
                 "id": "custom.cellOptions",
@@ -416,7 +416,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    peer,\n    protocol,\n    sum(traffic) AS traffic,\n    sum(flows) AS flows\nFROM\n(\n    SELECT\n        if(\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip',\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)),\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr))\n        ) AS peer,\n        multiIf(\n            nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n            dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n            nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n            dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n            concat('port-', toString(dst_port))\n        ) AS protocol,\n        bytes * 8 * if(sampling_rate = 0, 1, sampling_rate) AS traffic,\n        1 AS flows\n    FROM $table\n    WHERE $timeFilter\n      AND '$ip' != ''\n      AND (\n            ('$role' = 'any' AND (\n                if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n             OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n            ))\n         OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n         OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n      )\n)\nWHERE peer != '' AND peer != '$ip'\nGROUP BY peer, protocol\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
+          "query": "SELECT\n    peer,\n    protocol,\n    sum(traffic) AS traffic,\n    sum(flows) AS flows\nFROM\n(\n    SELECT\n        if(\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip',\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)),\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr))\n        ) AS peer,\n        multiIf(\n            nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n            dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n            nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n            dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n            concat('port-', toString(dst_port))\n        ) AS protocol,\n        bytes * if(sampling_rate = 0, 1, sampling_rate) AS traffic,\n        1 AS flows\n    FROM $table\n    WHERE $timeFilter\n      AND '$ip' != ''\n      AND (\n            ('$role' = 'any' AND (\n                if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n             OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n            ))\n         OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n         OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n      )\n)\nWHERE peer != '' AND peer != '$ip'\nGROUP BY peer, protocol\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -456,7 +456,7 @@
             "properties": [
               {
                 "id": "unit",
-                "value": "decbits"
+                "value": "decbytes"
               },
               {
                 "id": "custom.cellOptions",
@@ -502,7 +502,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    dst_port,\n    sum(bytes * 8 * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY protocol, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
+          "query": "SELECT\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    dst_port,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY protocol, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -542,7 +542,7 @@
             "properties": [
               {
                 "id": "unit",
-                "value": "decbits"
+                "value": "decbytes"
               }
             ]
           }
@@ -580,7 +580,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))), IPv6NumToString(sampler_address)) AS exporter,\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) AS source,\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) AS destination,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    src_port,\n    dst_port,\n    sum(bytes * 8 * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    sum(packets * if(sampling_rate = 0, 1, sampling_rate)) AS packets,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY exporter, source, destination, protocol, src_port, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$detail_rows')",
+          "query": "SELECT\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))), IPv6NumToString(sampler_address)) AS exporter,\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) AS source,\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) AS destination,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    src_port,\n    dst_port,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    sum(packets * if(sampling_rate = 0, 1, sampling_rate)) AS packets,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY exporter, source, destination, protocol, src_port, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$detail_rows')",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -596,7 +596,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "unit": "decbits"
+          "unit": "decbytes"
         },
         "overrides": []
       },
@@ -638,7 +638,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  multiIf(\n    proto = 6, 'TCP',\n    proto = 17, 'UDP',\n    proto = 1, 'ICMP',\n    proto = 58, 'ICMPv6',\n    proto = 47, 'GRE',\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))\n  ) AS protocol,\n  sum(bytes * 8 * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY protocol\nORDER BY traffic DESC",
+          "query": "SELECT\n  multiIf(\n    proto = 6, 'TCP',\n    proto = 17, 'UDP',\n    proto = 1, 'ICMP',\n    proto = 58, 'ICMPv6',\n    proto = 47, 'GRE',\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))\n  ) AS protocol,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY protocol\nORDER BY traffic DESC",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -654,7 +654,7 @@
           "color": {
             "mode": "palette-classic"
           },
-          "unit": "decbits"
+          "unit": "decbytes"
         },
         "overrides": []
       },
@@ -696,7 +696,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  multiIf(\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n    dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n    dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n    concat('port-', toString(dst_port))\n  ) AS application,\n  sum(bytes * 8 * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY application\nORDER BY traffic DESC\nLIMIT 12",
+          "query": "SELECT\n  multiIf(\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n    dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n    dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n    concat('port-', toString(dst_port))\n  ) AS application,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY application\nORDER BY traffic DESC\nLIMIT 12",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -846,6 +846,6 @@
   "timezone": "browser",
   "title": "IP Flow Lookup",
   "uid": "flow-ip-lookup",
-  "version": 22,
+  "version": 23,
   "weekStart": ""
 }
