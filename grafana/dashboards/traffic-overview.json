@@ -377,7 +377,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Select and copy IP text (Ctrl/Cmd+C). Traffic shown as bytes.",
+      "description": "To copy an IP: select the text, or click the cell → Inspect → Copy. Traffic values are in bytes.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -385,7 +385,8 @@
             "cellOptions": {
               "type": "auto"
             },
-            "inspect": false
+            "inspect": false,
+            "filterable": false
           },
           "thresholds": {
             "mode": "absolute",
@@ -410,7 +411,7 @@
               },
               {
                 "id": "custom.width",
-                "value": 150
+                "value": 160
               },
               {
                 "id": "custom.cellOptions",
@@ -420,6 +421,10 @@
               },
               {
                 "id": "custom.filterable",
+                "value": false
+              },
+              {
+                "id": "custom.inspect",
                 "value": true
               }
             ]
@@ -472,7 +477,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Select and copy IP text (Ctrl/Cmd+C). Traffic shown as bytes.",
+      "description": "To copy an IP: select the text, or click the cell → Inspect → Copy. Traffic values are in bytes.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -480,7 +485,8 @@
             "cellOptions": {
               "type": "auto"
             },
-            "inspect": false
+            "inspect": false,
+            "filterable": false
           },
           "thresholds": {
             "mode": "absolute",
@@ -505,7 +511,7 @@
               },
               {
                 "id": "custom.width",
-                "value": 150
+                "value": 160
               },
               {
                 "id": "custom.cellOptions",
@@ -515,6 +521,10 @@
               },
               {
                 "id": "custom.filterable",
+                "value": false
+              },
+              {
+                "id": "custom.inspect",
                 "value": true
               }
             ]
@@ -710,6 +720,27 @@
       ],
       "title": "Applications",
       "type": "piechart"
+    },
+    {
+      "type": "text",
+      "id": 98,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 100
+      },
+      "title": "",
+      "transparent": true,
+      "options": {
+        "mode": "html",
+        "code": {
+          "language": "html",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<style>/* Allow selecting/copying IP text in tables */[data-testid='table'] td,[data-testid='data-testid table body'] td,div[role='gridcell'],.table-panel-tables-wrap td,td[role='cell']{user-select:text!important;-webkit-user-select:text!important;-moz-user-select:text!important;cursor:text!important;}</style>"
+      }
     }
   ],
   "refresh": "30s",
@@ -763,6 +794,6 @@
   "timezone": "browser",
   "title": "Traffic Overview",
   "uid": "flow-traffic-overview",
-  "version": 24,
+  "version": 25,
   "weekStart": ""
 }

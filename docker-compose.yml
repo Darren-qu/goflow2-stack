@@ -76,6 +76,8 @@ services:
       GF_INSTALL_PLUGINS: vertamedia-clickhouse-datasource,netsage-sankey-panel
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: netsage-sankey-panel
       GF_USERS_ALLOW_SIGN_UP: "false"
+      # Allow HTML <style> in Text panels (used so table IP text can be selected/copied)
+      GF_PANELS_DISABLE_SANITIZE_HTML: "true"
       # LDAP (edit ./grafana/ldap.toml). Local admin still works until you disable it.
       GF_AUTH_LDAP_ENABLED: "true"
       GF_AUTH_LDAP_CONFIG_FILE: /etc/grafana/ldap.toml
