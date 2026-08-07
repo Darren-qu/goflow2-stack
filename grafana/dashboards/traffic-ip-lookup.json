@@ -1,14 +1,46 @@
 {
-  "annotations": { "list": [] },
-  "description": "Look up flows involving a single IP (as source, destination, or either).",
+  "annotations": {
+    "list": []
+  },
+  "description": "Single-IP investigation with L4/application pies, peers, and services.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [
-    { "asDropdown": false, "icon": "dashboard", "includeVars": false, "keepTime": true, "tags": [], "targetBlank": false, "title": "Overview", "type": "link", "url": "/d/flow-traffic-overview" },
-    { "asDropdown": false, "icon": "external link", "includeVars": false, "keepTime": true, "tags": [], "targetBlank": false, "title": "Sankey", "type": "link", "url": "/d/flow-sankey" },
-    { "asDropdown": false, "icon": "external link", "includeVars": false, "keepTime": true, "tags": [], "targetBlank": false, "title": "Geo Map", "type": "link", "url": "/d/flow-geo-map" }
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Overview",
+      "type": "link",
+      "url": "/d/flow-traffic-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Sankey",
+      "type": "link",
+      "url": "/d/flow-sankey"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Geo Map",
+      "type": "link",
+      "url": "/d/flow-geo-map"
+    }
   ],
   "liveNow": false,
   "panels": [
@@ -16,18 +48,39 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
           "unit": "decbytes"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name"
       },
       "targets": [
@@ -49,18 +102,39 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
       "id": 2,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name"
       },
       "targets": [
@@ -82,18 +156,39 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
       "id": 3,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name"
       },
       "targets": [
@@ -115,18 +210,39 @@
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
       "id": 4,
       "options": {
         "colorMode": "background_solid",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "value_and_name"
       },
       "targets": [
@@ -146,26 +262,43 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Traffic over time for the queried IP",
+      "description": "Traffic over time split by as_source / as_destination / both",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "drawStyle": "bars",
             "fillOpacity": 40,
             "lineWidth": 1,
-            "stacking": { "group": "A", "mode": "normal" }
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
           },
           "unit": "decbytes"
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
       "id": 5,
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       },
       "targets": [
         {
@@ -188,40 +321,103 @@
         "defaults": {
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "peer" },
-            "properties": [{ "id": "displayName", "value": "Peer" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "protocol" },
-            "properties": [{ "id": "displayName", "value": "App" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "traffic" },
+            "matcher": {
+              "id": "byName",
+              "options": "peer"
+            },
             "properties": [
-              { "id": "unit", "value": "decbytes" },
-              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge", "valueDisplayMode": "text" } }
+              {
+                "id": "displayName",
+                "value": "Peer"
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open IP Lookup",
+                    "url": "/d/flow-ip-lookup?var-ip=${__value.raw}&${__url_time_range}",
+                    "targetBlank": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "protocol"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "App"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              }
             ]
           }
         ]
       },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 12 },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
       "id": 6,
       "options": {
         "cellHeight": "sm",
-        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "traffic" }]
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
       },
       "targets": [
         {
@@ -244,32 +440,69 @@
         "defaults": {
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "traffic" },
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
             "properties": [
-              { "id": "unit", "value": "decbytes" },
-              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge", "valueDisplayMode": "text" } }
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              }
             ]
           }
         ]
       },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 12 },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
       "id": 7,
       "options": {
         "cellHeight": "sm",
-        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "traffic" }]
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
       },
       "targets": [
         {
@@ -293,29 +526,61 @@
         "defaults": {
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "cellOptions": {
+              "type": "auto"
+            },
             "inspect": false
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "traffic" },
-            "properties": [{ "id": "unit", "value": "decbytes" }]
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decbytes"
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 22 },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
       "id": 8,
       "options": {
         "cellHeight": "sm",
-        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
         "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "traffic" }]
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
       },
       "targets": [
         {
@@ -331,67 +596,250 @@
       ],
       "title": "Flow details ($ip)",
       "type": "table"
+    },
+    {
+      "datasource": "ClickHouse",
+      "description": "Layer-4 protocol mix for this IP (TCP / UDP / ICMP / …).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 4
+      },
+      "id": 50,
+      "options": {
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT\n  multiIf(\n    proto = 6, 'TCP',\n    proto = 17, 'UDP',\n    proto = 1, 'ICMP',\n    proto = 58, 'ICMPv6',\n    proto = 47, 'GRE',\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))\n  ) AS protocol,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY protocol\nORDER BY traffic DESC",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ],
+      "title": "L4 Protocols",
+      "type": "piechart"
+    },
+    {
+      "datasource": "ClickHouse",
+      "description": "Application inferred from well-known ports for this IP.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 4
+      },
+      "id": 51,
+      "options": {
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT\n  multiIf(\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n    dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n    dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n    concat('port-', toString(dst_port))\n  ) AS application,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY application\nORDER BY traffic DESC\nLIMIT 12",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ],
+      "title": "Applications",
+      "type": "piechart"
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["netflow", "ip", "lookup", "goflow2"],
+  "tags": [
+    "netflow",
+    "ip",
+    "lookup",
+    "goflow2"
+  ],
   "templating": {
     "list": [
       {
-        "current": { "selected": true, "text": "", "value": "" },
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
         "hide": 0,
         "label": "IP",
         "name": "ip",
-        "options": [{ "selected": true, "text": "", "value": "" }],
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ],
         "query": "",
         "skipUrlSync": false,
         "type": "textbox"
       },
       {
-        "current": { "selected": true, "text": "Any", "value": "any" },
+        "current": {
+          "selected": true,
+          "text": "Any",
+          "value": "any"
+        },
         "hide": 0,
         "includeAll": false,
         "label": "As",
         "multi": false,
         "name": "role",
         "options": [
-          { "selected": true, "text": "Any", "value": "any" },
-          { "selected": false, "text": "Source", "value": "src" },
-          { "selected": false, "text": "Destination", "value": "dst" }
+          {
+            "selected": true,
+            "text": "Any",
+            "value": "any"
+          },
+          {
+            "selected": false,
+            "text": "Source",
+            "value": "src"
+          },
+          {
+            "selected": false,
+            "text": "Destination",
+            "value": "dst"
+          }
         ],
         "query": "Any : any,Source : src,Destination : dst",
         "skipUrlSync": false,
         "type": "custom"
       },
       {
-        "current": { "selected": true, "text": "20", "value": "20" },
+        "current": {
+          "selected": true,
+          "text": "20",
+          "value": "20"
+        },
         "hide": 0,
         "includeAll": false,
         "label": "Top N",
         "multi": false,
         "name": "topn",
         "options": [
-          { "selected": false, "text": "10", "value": "10" },
-          { "selected": true, "text": "20", "value": "20" },
-          { "selected": false, "text": "50", "value": "50" }
+          {
+            "selected": false,
+            "text": "10",
+            "value": "10"
+          },
+          {
+            "selected": true,
+            "text": "20",
+            "value": "20"
+          },
+          {
+            "selected": false,
+            "text": "50",
+            "value": "50"
+          }
         ],
         "query": "10,20,50",
         "skipUrlSync": false,
         "type": "custom"
       },
       {
-        "current": { "selected": true, "text": "50", "value": "50" },
+        "current": {
+          "selected": true,
+          "text": "50",
+          "value": "50"
+        },
         "hide": 0,
         "includeAll": false,
         "label": "Detail rows",
         "multi": false,
         "name": "detail_rows",
         "options": [
-          { "selected": false, "text": "20", "value": "20" },
-          { "selected": true, "text": "50", "value": "50" },
-          { "selected": false, "text": "100", "value": "100" },
-          { "selected": false, "text": "200", "value": "200" }
+          {
+            "selected": false,
+            "text": "20",
+            "value": "20"
+          },
+          {
+            "selected": true,
+            "text": "50",
+            "value": "50"
+          },
+          {
+            "selected": false,
+            "text": "100",
+            "value": "100"
+          },
+          {
+            "selected": false,
+            "text": "200",
+            "value": "200"
+          }
         ],
         "query": "20,50,100,200",
         "skipUrlSync": false,
@@ -399,11 +847,14 @@
       }
     ]
   },
-  "time": { "from": "now-6h", "to": "now" },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "browser",
   "title": "IP Flow Lookup",
   "uid": "flow-ip-lookup",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

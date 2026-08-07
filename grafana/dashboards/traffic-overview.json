@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "At-a-glance traffic overview. Scope: All / East-West (private↔private) / North-South (private↔public).",
+  "description": "At-a-glance traffic overview with L4/application pies. Scope: All / East-West / North-South. Click Top IPs for Lookup.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -282,7 +282,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 10,
         "x": 0,
         "y": 4
       },
@@ -330,8 +330,8 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
+        "w": 7,
+        "x": 10,
         "y": 4
       },
       "id": 31,
@@ -371,12 +371,12 @@
           "table": "flows_raw"
         }
       ],
-      "title": "Protocols",
+      "title": "L4 Protocols",
       "type": "piechart"
     },
     {
       "datasource": "ClickHouse",
-      "description": "East-West: private IPs. North-South: private sources (outbound). All: any.",
+      "description": "Click an IP to open IP Lookup. East-West: private. North-South: private sources.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -410,6 +410,16 @@
               {
                 "id": "custom.width",
                 "value": 150
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open IP Lookup",
+                    "url": "/d/flow-ip-lookup?var-ip=${__value.raw}&${__url_time_range}",
+                    "targetBlank": false
+                  }
+                ]
               }
             ]
           },
@@ -469,7 +479,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "East-West: private IPs. North-South: public destinations. All: any.",
+      "description": "Click an IP to open IP Lookup. East-West: private. North-South: public destinations.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -503,6 +513,16 @@
               {
                 "id": "custom.width",
                 "value": 150
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open IP Lookup",
+                    "url": "/d/flow-ip-lookup?var-ip=${__value.raw}&${__url_time_range}",
+                    "targetBlank": false
+                  }
+                ]
               }
             ]
           },
@@ -647,6 +667,64 @@
       ],
       "title": "Top Services",
       "type": "table"
+    },
+    {
+      "datasource": "ClickHouse",
+      "description": "Application inferred from well-known destination ports (HTTPS, DNS, SSH, …).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 7,
+        "x": 17,
+        "y": 4
+      },
+      "id": 32,
+      "options": {
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT\n  if(\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') = '',\n    concat('port-', toString(dst_port)),\n    dictGetString('dictionaries.services', 'name', toUInt64(dst_port))\n  ) AS application,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND etype = 2048\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND (\n        (\n          (isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n        OR (\n          NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n      )\n    )\n  )\nGROUP BY application\nORDER BY traffic DESC\nLIMIT 12",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ],
+      "title": "Applications",
+      "type": "piechart"
     }
   ],
   "refresh": "30s",
@@ -700,6 +778,6 @@
   "timezone": "browser",
   "title": "Traffic Overview",
   "uid": "flow-traffic-overview",
-  "version": 8,
+  "version": 9,
   "weekStart": ""
 }
