@@ -173,10 +173,12 @@ See `clickhouse/setup_geoip.sh`.
 
 ## Device export & verification
 
+Point exporters at this host:
+
 - NetFlow / NetStream / IPFIX → `<host-ip>:2055`
 - sFlow → `<host-ip>:6343`
 
-Point exporters at this host; use vendor NetStream docs as needed.
+**Copy-paste device snippets:** see [`device-config/`](device-config/) (Huawei, Cisco IOS-XR / NX-OS, Arista sFlow, Juniper).
 
 ```bash
 docker compose logs -f --tail=50 goflow2
@@ -189,6 +191,45 @@ sudo tcpdump -ni any udp port 6343 -c 20
 ```
 
 If devices omit sampling rate, dashboard math using `bytes * sampling_rate` can look wrong — fix SQL or configure sampling on the device.
+
+---
+
+## Capacity planning
+
+ClickHouse disk is driven by **flow record rate**, not by link Gbps. Sampling lowers fps; TTL bounds how many days you keep.
+
+### Ballpark formula
+
+Per raw row on disk (MergeTree overhead included), use roughly **200–300 bytes** (conservative). Then:
+
+```text
+disk_raw_bytes ≈ fps × 86400 × FLOWS_RAW_TTL_DAYS × bytes_per_row_on_disk
+disk_5m_bytes  ≈ 0.05 … 0.15 × disk_raw_bytes   # often much smaller
+disk_total     ≈ disk_raw + disk_5m + Kafka buffer + headroom (20–30%)
+```
+
+Example with **250 B/row**, **30-day** raw TTL (`fps × 86400 × 30 × 250`):
+
+| Sustained fps | Raw ≈ 30d | Notes |
+|---------------|-----------|--------|
+| 1 000 | ~**18 GB** | Small site / heavy sampling |
+| 5 000 | ~**90 GB** | Comfortable single SSD node |
+| 20 000 | ~**360 GB** | Watch disk & query load |
+| 50 000 | ~**900 GB** | Shorten TTL, sample more, or plan cluster |
+
+Kafka at 48h is usually small next to ClickHouse if CH keeps up.
+
+### Single-node vs cluster
+
+| Mode | File | Role |
+|------|------|------|
+| **Default** | `docker-compose.yml` | One ClickHouse — fine for many enterprise deployments |
+| **Sketch only** | `docker-compose.override.cluster.yml.example` | Keeper + 2×2 naming; see [`clickhouse/cluster/README.md`](clickhouse/cluster/README.md) |
+
+**Before clustering:** raise sampling, add disk, or lower `FLOWS_RAW_TTL_DAYS`.  
+**Consider clustering when:** sustained high fps (ballpark **tens of thousands** records/sec), disk stays **> ~70%**, or you need multi-host HA. The example is **not** wired into `install.sh`.
+
+**Lab sizing reminder:** 2–4 CPU / 8 GB RAM / SSD ≥ 40 GB to start; keep Kafka/CH off busy application disks.
 
 ---
 
@@ -217,9 +258,10 @@ docker compose down -v      # wipe ClickHouse / Grafana data
 | `clickhouse/services.csv` | Well-known port → app name |
 | `grafana/dashboards/` | Provisioned dashboards |
 | `grafana/ldap.toml.example` | LDAP template (copy to `ldap.toml`; do not commit secrets) |
+| `device-config/` | Vendor NetFlow / sFlow snippets (Huawei, Cisco, Arista, Juniper) |
+| `clickhouse/cluster/` | Notes for optional CH cluster sketch |
+| `docker-compose.override.cluster.yml.example` | Non-default Keeper + 2×2 service skeleton |
 | `prometheus/` | Scrapes GoFlow2 metrics |
-
-**Sizing:** lab 2–4 CPU / 8 GB / SSD ≥ 40 GB; production — grow ClickHouse disk; keep Kafka/CH off busy app disks.
 
 **Coexistence:**
 
