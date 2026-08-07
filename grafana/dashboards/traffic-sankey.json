@@ -15,16 +15,50 @@
       }
     ]
   },
-  "description": "Sankey with dimension switch + filters (exporter / protocol / port / CIDR)",
+  "description": "Flow paths as Sankey. Pick dimension, filter exporter/protocol/port/CIDR. Top N (default 8) controls node count; Detail rows for the table below.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Overview",
+      "type": "link",
+      "url": "/d/flow-traffic-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "IP Lookup",
+      "type": "link",
+      "url": "/d/flow-ip-lookup"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Geo Map",
+      "type": "link",
+      "url": "/d/flow-geo-map"
+    }
+  ],
   "panels": [
     {
       "datasource": "ClickHouse",
-      "description": "Left=source dimension, right=destination. Nodes outside Top N are aggregated as Other. Controlled by top variables.",
+      "description": "Top N nodes per side; remainder rolled into Other. Use filters above to focus a slice of traffic.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -46,7 +80,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 20,
+        "h": 16,
         "w": 24,
         "x": 0,
         "y": 0
@@ -72,7 +106,7 @@
           "table": "flows_raw"
         }
       ],
-      "title": "Sankey ($dimension | Top $topn + Other)",
+      "title": "Sankey ($dimension)",
       "type": "netsage-sankey-panel"
     },
     {
@@ -81,23 +115,92 @@
         "defaults": {
           "custom": {
             "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
+            "filterable": true,
+            "inspect": false,
+            "wrapText": false
           }
         },
         "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "exporter"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Exporter"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "source"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Source"
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "IP Lookup",
+                    "url": "/d/flow-ip-lookup?var-ip=${__value.text}&var-role=any&from=${__from}&to=${__to}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "destination"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Destination"
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "IP Lookup",
+                    "url": "/d/flow-ip-lookup?var-ip=${__value.text}&var-role=any&from=${__from}&to=${__to}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "protocol"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Proto"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dst_port"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Dst port"
+              }
+            ]
+          },
           {
             "matcher": {
               "id": "byName",
@@ -105,14 +208,41 @@
             },
             "properties": [
               {
+                "id": "displayName",
+                "value": "Traffic"
+              },
+              {
                 "id": "unit",
                 "value": "decbytes"
               },
               {
                 "id": "custom.cellOptions",
                 "value": {
+                  "type": "gauge",
                   "mode": "gradient",
-                  "type": "gauge"
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "percentage",
+                  "steps": [
+                    {
+                      "color": "transparent",
+                      "value": null
+                    },
+                    {
+                      "color": "semi-dark-blue",
+                      "value": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
                 }
               }
             ]
@@ -120,39 +250,39 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "traffic_mib"
+              "options": "flows"
             },
             "properties": [
               {
                 "id": "displayName",
-                "value": "MiB"
+                "value": "Flows"
               },
               {
-                "id": "decimals",
-                "value": 2
+                "id": "unit",
+                "value": "short"
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 10,
+        "h": 9,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 16
       },
       "id": 2,
       "options": {
         "cellHeight": "sm",
+        "showHeader": true,
         "footer": {
-          "countRows": false,
-          "fields": "",
+          "show": true,
           "reducer": [
             "sum"
           ],
-          "show": false
+          "countRows": false,
+          "fields": "traffic"
         },
-        "showHeader": true,
         "sortBy": [
           {
             "desc": true,
@@ -167,13 +297,14 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) AS exporter,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n       IPv6NumToString(src_addr)) AS source,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n       IPv6NumToString(dst_addr)) AS destination,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    dst_port,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    round(sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) / 1048576, 2) AS traffic_mib,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND ('$exporter' = 'All' OR if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) = '$exporter')\n  AND ('$protocol' = 'All' OR ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) = '$protocol')\n  AND ('$dst_port' = 'All' OR toString(dst_port) = '$dst_port')\n  AND (\n        '$src_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '$src_net'))\n  )\n  AND (\n        '$dst_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '$dst_net'))\n  )\nGROUP BY exporter, source, destination, protocol, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$detail_rows')",
+          "query": "SELECT\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) AS exporter,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n       IPv6NumToString(src_addr)) AS source,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n       IPv6NumToString(dst_addr)) AS destination,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    dst_port,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND ('$exporter' = 'All' OR if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) = '$exporter')\n  AND ('$protocol' = 'All' OR ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) = '$protocol')\n  AND ('$dst_port' = 'All' OR toString(dst_port) = '$dst_port')\n  AND (\n        '$src_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '$src_net'))\n  )\n  AND (\n        '$dst_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '$dst_net'))\n  )\nGROUP BY exporter, source, destination, protocol, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$detail_rows')",
           "refId": "A",
           "table": "flows_raw"
         }
       ],
-      "title": "Top $detail_rows Details (filtered)",
-      "type": "table"
+      "title": "Flow details",
+      "type": "table",
+      "description": "Filtered rows for the same scope as the Sankey. Row count = Detail rows (default 8)."
     }
   ],
   "refresh": "30s",
@@ -223,88 +354,47 @@
             "value": "proto_port"
           }
         ],
-        "query": "src_dst,exp_dst,exp_src,src_port,proto_port",
+        "query": "SrcIP → DstIP : src_dst,Exporter → DstIP : exp_dst,Exporter → SrcIP : exp_src,SrcIP → DstPort : src_port,Proto → DstPort : proto_port",
         "skipUrlSync": false,
         "type": "custom"
       },
       {
+        "name": "topn",
+        "type": "textbox",
+        "label": "Top N",
+        "query": "8",
         "current": {
           "selected": true,
-          "text": "12",
-          "value": "12"
+          "text": "8",
+          "value": "8"
         },
-        "hide": 0,
-        "includeAll": false,
-        "label": "Top N",
-        "multi": false,
-        "name": "topn",
         "options": [
           {
-            "selected": false,
+            "selected": true,
             "text": "8",
             "value": "8"
-          },
-          {
-            "selected": true,
-            "text": "12",
-            "value": "12"
-          },
-          {
-            "selected": false,
-            "text": "20",
-            "value": "20"
-          },
-          {
-            "selected": false,
-            "text": "30",
-            "value": "30"
           }
         ],
-        "query": "8,12,20,30",
-        "skipUrlSync": false,
-        "type": "custom"
+        "hide": 0
       },
       {
+        "name": "detail_rows",
+        "type": "textbox",
+        "label": "Detail rows",
+        "query": "8",
         "current": {
           "selected": true,
-          "text": "10",
-          "value": "10"
+          "text": "8",
+          "value": "8"
         },
-        "hide": 0,
-        "includeAll": false,
-        "label": "Detail rows",
-        "multi": false,
-        "name": "detail_rows",
         "options": [
           {
             "selected": true,
-            "text": "10",
-            "value": "10"
-          },
-          {
-            "selected": false,
-            "text": "20",
-            "value": "20"
-          },
-          {
-            "selected": false,
-            "text": "30",
-            "value": "30"
-          },
-          {
-            "selected": false,
-            "text": "50",
-            "value": "50"
-          },
-          {
-            "selected": false,
-            "text": "100",
-            "value": "100"
+            "text": "8",
+            "value": "8"
           }
         ],
-        "query": "10,20,30,50,100",
-        "skipUrlSync": false,
-        "type": "custom"
+        "hide": 0
       },
       {
         "allValue": "All",
@@ -415,13 +505,14 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Traffic Sankey",
   "uid": "flow-sankey",
-  "version": 6,
-  "weekStart": ""
+  "version": 9,
+  "weekStart": "",
+  "liveNow": false
 }

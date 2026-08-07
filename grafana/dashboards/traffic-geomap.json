@@ -1,46 +1,103 @@
 {
-  "annotations": { "list": [] },
-  "description": "Public IP geolocation map. Choose Source or Destination. GeoIP: DB-IP Lite via ClickHouse geoip_trie. Private RFC1918 excluded. Attribution: https://db-ip.com (CC BY 4.0)",
+  "annotations": {
+    "list": []
+  },
+  "description": "Public IP geolocation (DB-IP Lite). Private RFC1918 excluded. Map opens at world view. Top N (default 8) for country / IP tables.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [
-    { "asDropdown": false, "icon": "dashboard", "includeVars": true, "keepTime": true, "tags": [], "targetBlank": false, "title": "Traffic Console", "type": "link", "url": "/d/flow-traffic-overview" }
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Overview",
+      "type": "link",
+      "url": "/d/flow-traffic-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "IP Lookup",
+      "type": "link",
+      "url": "/d/flow-ip-lookup"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Sankey",
+      "type": "link",
+      "url": "/d/flow-sankey"
+    }
   ],
   "liveNow": false,
   "panels": [
     {
       "datasource": "ClickHouse",
-      "description": "Public IPs aggregated by city (Source or Destination per variable). Marker size = traffic. IP Geolocation by DB-IP https://db-ip.com",
+      "description": "Initial view = full world. Marker size ∝ traffic. Switch Map IP between Destination / Source public addresses.",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "custom": {},
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1000000 },
-              { "color": "orange", "value": 10000000 },
-              { "color": "red", "value": 100000000 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000000
+              },
+              {
+                "color": "orange",
+                "value": 10000000
+              },
+              {
+                "color": "red",
+                "value": 100000000
+              }
             ]
           },
           "unit": "decbytes"
         },
         "overrides": []
       },
-      "gridPos": { "h": 14, "w": 16, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 15,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "options": {
-        "basemap": { "config": {}, "name": "Layer 0", "type": "default" },
+        "basemap": {
+          "config": {},
+          "name": "Layer 0",
+          "type": "default"
+        },
         "controls": {
           "mouseWheelZoom": true,
           "showAttribution": true,
           "showDebug": false,
           "showMeasure": false,
-          "showScale": false,
+          "showScale": true,
           "showZoom": true
         },
         "layers": [
@@ -48,11 +105,27 @@
             "config": {
               "showLegend": true,
               "style": {
-                "color": { "fixed": "dark-orange", "field": "traffic" },
-                "opacity": 0.8,
-                "rotation": { "fixed": 0, "max": 360, "min": -360, "mode": "mod" },
-                "size": { "field": "traffic", "fixed": 6, "max": 30, "min": 5 },
-                "symbol": { "fixed": "img/icons/marker/circle.svg", "mode": "fixed" },
+                "color": {
+                  "fixed": "dark-orange",
+                  "field": "traffic"
+                },
+                "opacity": 0.85,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
+                "size": {
+                  "field": "traffic",
+                  "fixed": 5,
+                  "max": 28,
+                  "min": 4
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
                 "textConfig": {
                   "fontSize": 12,
                   "offsetX": 0,
@@ -72,8 +145,17 @@
             "type": "markers"
           }
         ],
-        "tooltip": { "mode": "details" },
-        "view": { "allLayers": true, "id": "zero", "lat": 30, "lon": 105, "zoom": 3 }
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "id": "coords",
+          "lat": 20,
+          "lon": 0,
+          "zoom": 1.5,
+          "allLayers": false,
+          "padding": 0
+        }
       },
       "pluginVersion": "12.1.0",
       "targets": [
@@ -83,55 +165,141 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    latitude,\n    longitude,\n    if(city = '', country, concat(country, ' / ', city)) AS place,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM\n(\n    SELECT\n        bytes,\n        sampling_rate,\n        dictGet('geoip_trie', 'latitude', ip) AS latitude,\n        dictGet('geoip_trie', 'longitude', ip) AS longitude,\n        dictGet('geoip_trie', 'country_code', ip) AS country,\n        dictGet('geoip_trie', 'city', ip) AS city\n    FROM\n    (\n        SELECT\n            bytes,\n            sampling_rate,\n            reinterpretAsUInt32(substring(reverse(${direction}), 13, 4)) AS ip\n        FROM $table\n        WHERE $timeFilter\n          AND etype = 2048\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '10.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '172.16.0.0/12')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '192.168.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '127.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '169.254.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '100.64.0.0/10')\n    )\n)\nWHERE (latitude != 0 OR longitude != 0) AND country != ''\nGROUP BY latitude, longitude, place\nORDER BY traffic DESC\nLIMIT 500",
+          "query": "SELECT\n    latitude,\n    longitude,\n    if(city = '', country, concat(country, ' / ', city)) AS place,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM\n(\n    SELECT\n        bytes,\n        sampling_rate,\n        dictGet('geoip_trie', 'latitude', ip) AS latitude,\n        dictGet('geoip_trie', 'longitude', ip) AS longitude,\n        dictGet('geoip_trie', 'country_code', ip) AS country,\n        dictGet('geoip_trie', 'city', ip) AS city\n    FROM\n    (\n        SELECT\n            bytes,\n            sampling_rate,\n            reinterpretAsUInt32(substring(reverse(${direction}), 13, 4)) AS ip\n        FROM $table\n        WHERE $timeFilter\n          AND etype = 2048\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '10.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '172.16.0.0/12')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '192.168.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '127.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '169.254.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '100.64.0.0/10')\n    )\n)\nWHERE (latitude != 0 OR longitude != 0) AND country != ''\nGROUP BY latitude, longitude, place\nORDER BY traffic DESC\nLIMIT 400",
           "refId": "A",
           "table": "flows_raw"
         }
       ],
-      "title": "Public IP Map (${direction:text})",
+      "title": "World map (${direction:text})",
       "type": "geomap"
     },
     {
       "datasource": "ClickHouse",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "filterable": true,
             "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "country" },
-            "properties": [{ "id": "displayName", "value": "Country" }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "traffic" },
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
             "properties": [
-              { "id": "unit", "value": "decbytes" },
-              { "id": "custom.cellOptions", "value": { "mode": "gradient", "type": "gauge", "valueDisplayMode": "text" } }
+              {
+                "id": "displayName",
+                "value": "Traffic"
+              },
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "percentage",
+                  "steps": [
+                    {
+                      "color": "transparent",
+                      "value": null
+                    },
+                    {
+                      "color": "semi-dark-orange",
+                      "value": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "public_ips" },
-            "properties": [{ "id": "displayName", "value": "IPs" }]
+            "matcher": {
+              "id": "byName",
+              "options": "country"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Country"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "flows"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Flows"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "public_ips"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Public IPs"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 14, "w": 8, "x": 16, "y": 0 },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
       "id": 2,
       "options": {
         "cellHeight": "sm",
-        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
         "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "traffic" }]
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": "traffic",
+          "countRows": false
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
       },
       "targets": [
         {
@@ -140,13 +308,14 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    country,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows,\n    uniqExact(ip) AS public_ips\nFROM\n(\n    SELECT\n        bytes,\n        sampling_rate,\n        ip,\n        dictGet('geoip_trie', 'country_code', ip) AS country\n    FROM\n    (\n        SELECT\n            bytes,\n            sampling_rate,\n            reinterpretAsUInt32(substring(reverse(${direction}), 13, 4)) AS ip\n        FROM $table\n        WHERE $timeFilter\n          AND etype = 2048\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '10.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '172.16.0.0/12')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '192.168.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '127.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '169.254.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '100.64.0.0/10')\n    )\n)\nWHERE country != ''\nGROUP BY country\nORDER BY traffic DESC\nLIMIT 30",
+          "query": "SELECT\n    country,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows,\n    uniqExact(ip) AS public_ips\nFROM\n(\n    SELECT\n        bytes,\n        sampling_rate,\n        ip,\n        dictGet('geoip_trie', 'country_code', ip) AS country\n    FROM\n    (\n        SELECT\n            bytes,\n            sampling_rate,\n            reinterpretAsUInt32(substring(reverse(${direction}), 13, 4)) AS ip\n        FROM $table\n        WHERE $timeFilter\n          AND etype = 2048\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '10.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '172.16.0.0/12')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '192.168.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '127.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '169.254.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '100.64.0.0/10')\n    )\n)\nWHERE country != ''\nGROUP BY country\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
           "refId": "A",
           "table": "flows_raw"
         }
       ],
-      "title": "Top Countries (${direction:text})",
-      "type": "table"
+      "title": "Top countries",
+      "type": "table",
+      "description": "Countries for mapped public IPs. Rows = Top N (default 8)."
     },
     {
       "datasource": "ClickHouse",
@@ -154,41 +323,145 @@
         "defaults": {
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "filterable": true,
             "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "public_ip" },
-            "properties": [{ "id": "displayName", "value": "Public IP" }]
+            "matcher": {
+              "id": "byName",
+              "options": "public_ip"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Public IP"
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "IP Lookup",
+                    "url": "/d/flow-ip-lookup?var-ip=${__value.text}&var-role=any&from=${__from}&to=${__to}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "country" },
-            "properties": [{ "id": "displayName", "value": "Country" }]
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Traffic"
+              },
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "percentage",
+                  "steps": [
+                    {
+                      "color": "transparent",
+                      "value": null
+                    },
+                    {
+                      "color": "semi-dark-orange",
+                      "value": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "city" },
-            "properties": [{ "id": "displayName", "value": "City" }]
+            "matcher": {
+              "id": "byName",
+              "options": "country"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Country"
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "traffic" },
-            "properties": [{ "id": "unit", "value": "decbytes" }]
+            "matcher": {
+              "id": "byName",
+              "options": "city"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "City"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "flows"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Flows"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 14 },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
       "id": 4,
       "options": {
         "cellHeight": "sm",
-        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
         "showHeader": true,
-        "sortBy": [{ "desc": true, "displayName": "traffic" }]
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": "traffic",
+          "countRows": false
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
       },
       "targets": [
         {
@@ -197,18 +470,24 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    IPv4NumToString(ip) AS public_ip,\n    country,\n    city,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM\n(\n    SELECT\n        bytes,\n        sampling_rate,\n        ip,\n        dictGet('geoip_trie', 'country_code', ip) AS country,\n        dictGet('geoip_trie', 'city', ip) AS city\n    FROM\n    (\n        SELECT\n            bytes,\n            sampling_rate,\n            reinterpretAsUInt32(substring(reverse(${direction}), 13, 4)) AS ip\n        FROM $table\n        WHERE $timeFilter\n          AND etype = 2048\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '10.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '172.16.0.0/12')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '192.168.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '127.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '169.254.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '100.64.0.0/10')\n    )\n)\nWHERE country != ''\nGROUP BY public_ip, country, city\nORDER BY traffic DESC\nLIMIT 50",
+          "query": "SELECT\n    IPv4NumToString(ip) AS public_ip,\n    country,\n    city,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM\n(\n    SELECT\n        bytes,\n        sampling_rate,\n        ip,\n        dictGet('geoip_trie', 'country_code', ip) AS country,\n        dictGet('geoip_trie', 'city', ip) AS city\n    FROM\n    (\n        SELECT\n            bytes,\n            sampling_rate,\n            reinterpretAsUInt32(substring(reverse(${direction}), 13, 4)) AS ip\n        FROM $table\n        WHERE $timeFilter\n          AND etype = 2048\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '10.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '172.16.0.0/12')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '192.168.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '127.0.0.0/8')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '169.254.0.0/16')\n          AND NOT isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(${direction}), 13, 4))), '100.64.0.0/10')\n    )\n)\nWHERE country != ''\nGROUP BY public_ip, country, city\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
           "refId": "A",
           "table": "flows_raw"
         }
       ],
-      "title": "Top Public IPs (${direction:text})",
-      "type": "table"
+      "title": "Top public IPs",
+      "type": "table",
+      "description": "Public endpoints with GeoIP city/country. Rows = Top N (default 8)."
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["netflow", "geoip", "map", "goflow2"],
+  "tags": [
+    "netflow",
+    "geoip",
+    "map",
+    "goflow2"
+  ],
   "templating": {
     "list": [
       {
@@ -237,14 +516,36 @@
         "query": "Destination : dst_addr,Source : src_addr",
         "skipUrlSync": false,
         "type": "custom"
+      },
+      {
+        "name": "topn",
+        "type": "textbox",
+        "label": "Top N",
+        "query": "8",
+        "current": {
+          "selected": true,
+          "text": "8",
+          "value": "8"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "8",
+            "value": "8"
+          }
+        ],
+        "hide": 0
       }
     ]
   },
-  "time": { "from": "now-6h", "to": "now" },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "browser",
   "title": "Traffic Geo Map",
   "uid": "flow-geo-map",
-  "version": 4,
+  "version": 6,
   "weekStart": ""
 }

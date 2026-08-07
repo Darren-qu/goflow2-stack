@@ -1,157 +1,172 @@
 # GoFlow2 + Kafka + ClickHouse + Grafana
 
-开源流量分析栈（基于 [netsampler/goflow2](https://github.com/netsampler/goflow2) 官方 `compose/kcg`，改为预构建镜像、可独立部署）。
+开源流量分析栈：基于 [netsampler/goflow2](https://github.com/netsampler/goflow2) 官方 `compose/kcg`，改为预构建镜像、可独立部署。
 
 ```text
 网络设备 (NetFlow/IPFIX :2055, sFlow :6343)
         │
         ▼
-     GoFlow2  ──protobuf──►  Kafka  ──►  ClickHouse
-        │                                      │
-   metrics:8080                         Grafana :3030
+     GoFlow2 ──protobuf──► Kafka ──► ClickHouse
+        │                                  │
+   metrics :8080 (localhost)         Grafana :3030  ← 用户入口
         │
-   Prometheus :9090
+   Prometheus :9090 (localhost)
 ```
 
-> 若你更想要「开箱即用的流量分析 UI」，优先考虑 **Akvorado**。  
-> 本栈适合：要自己控采集/存储、和现有 Grafana 体系集成。
+| 场景 | 建议 |
+|------|------|
+| 要开箱 UI、少维护 | 优先考虑 **Akvorado** |
+| 要控采集/存储、接现有 Grafana / LDAP | 用本栈 |
 
-## 一键部署（推荐）
+当前参考部署：`10.0.20.201`（Grafana **13.1.2**，ClickHouse 已有流数据与 GeoIP）。
 
-仓库托管在内网 Gitea：`http://10.0.20.22:3000/netadmin/goflow2-stack`  
-（Git SSH：`ssh://git@10.0.20.22:2222/netadmin/goflow2-stack.git`）
+---
 
-目标机执行：
+## 快速开始
+
+仓库（内网 Gitea）：`http://10.0.20.22:3000/netadmin/goflow2-stack`  
+Git SSH：`ssh://git@10.0.20.22:2222/netadmin/goflow2-stack.git`
 
 ```bash
-# 已装 Docker Compose v2 + 本机 SSH 能访问 Gitea
+# 已装 Docker Compose v2，且能访问 Gitea
 curl -fsSL http://10.0.20.22:3000/netadmin/goflow2-stack/raw/branch/main/install.sh | bash
 
-# 同时装 Docker（Debian/Ubuntu）
+# 顺带装 Docker（Debian/Ubuntu）
 WITH_DOCKER=1 curl -fsSL http://10.0.20.22:3000/netadmin/goflow2-stack/raw/branch/main/install.sh | bash
 
 # 顺带导入 GeoIP（地图看板，较慢）
 WITH_GEOIP=1 curl -fsSL http://10.0.20.22:3000/netadmin/goflow2-stack/raw/branch/main/install.sh | bash
 ```
 
-等价手动方式：
+手动：
 
 ```bash
 git clone ssh://git@10.0.20.22:2222/netadmin/goflow2-stack.git
 cd goflow2-stack
-./deploy.sh            # 拉镜像并启动
-./deploy.sh --geoip    # 可选：导入地图 GeoIP
+cp .env.example .env          # 改默认密码
+./deploy.sh                   # pull + up
+./deploy.sh --geoip           # 可选：地图 GeoIP
 ```
 
-默认安装目录：`$HOME/goflow2-stack`（可用 `INSTALL_DIR=/opt/goflow2-stack` 覆盖）。
+默认目录：`$HOME/goflow2-stack`（`INSTALL_DIR=...` 可覆盖）。  
+首次启动等 ClickHouse 跑完 `clickhouse/create.sh`，约 30–60 秒。主机需能拉镜像，且 **UDP 可达**（部分 Colima 收不到 UDP）。
 
-> 主机需能拉 Docker 镜像，且 **UDP 端口转发可用**（部分 Colima 环境收不到 UDP）。
+---
 
-首次启动后等 ClickHouse 跑完 `clickhouse/create.sh`（建表/物化视图），大约 30–60 秒。
+## 端口与安全
 
-## 端口
+| 端口 | 绑定 | 用途 |
+|------|------|------|
+| **UDP 2055** | `0.0.0.0` | NetFlow v5/v9 / IPFIX |
+| **UDP 6343** | `0.0.0.0` | sFlow |
+| **3030** | `0.0.0.0` | Grafana UI（避开 ntopng `:3000`） |
+| 8123 / 9000 | `127.0.0.1` | ClickHouse HTTP / native |
+| 8080 | `127.0.0.1` | GoFlow2 metrics |
+| 9090 | `127.0.0.1` | Prometheus |
 
-| 端口 | 用途 |
+Kafka **不**映射主机端口。
+
+**默认收紧：**
+
+- 管理口只绑 localhost；口令在 `.env`（gitignore，从 `.env.example` 复制）。
+- Grafana 关匿名访问；LDAP 见 [grafana/LDAP.md](grafana/LDAP.md)。
+- 主机防火墙仍应限制 **3030** 与 UDP **2055/6343** 来源网段。
+
+> 已有 `ch_data` volume 时，改 `.env` 里 `CLICKHOUSE_PASSWORD` **不会**自动改库内密码（仅首次初始化生效）。
+
+---
+
+## Grafana 看板
+
+入口：`http://<主机IP>:3030`（账号见 `.env` 的 `GRAFANA_ADMIN_*`，默认 `admin`/`admin`，请立刻改掉）。
+
+| 看板 | UID / 路径 | 说明 |
+|------|------------|------|
+| **Traffic Overview** | `/d/flow-traffic-overview` | 总量、bps 趋势、L4/应用饼图、Top 源·目的·服务；Direction = All / East-West / North-South；**Top N** 默认 8（可改） |
+| **IP Flow Lookup** | `/d/flow-ip-lookup` | 单 IP：Inbound/Outbound 趋势、应用推断、Flow summary；Role = Any / Outbound / Inbound |
+| **Traffic Sankey** | `/d/flow-sankey` | 维度 + Exporter/协议/端口/CIDR 过滤；Top N / Detail rows 默认 8 |
+| **Traffic Geo Map** | `/d/flow-geo-map` | 公网地理（初始**全球视角**）；Map IP = Destination / Source；Top N 默认 8 |
+| `viz-ch` / `perfs` | 官方示例 | GoFlow2 自带 |
+
+**单位约定：** 表格/Stat 总量用 **bytes**；趋势图用 **bps**（`sum(bytes)*8/$interval`）。
+
+**应用名：** 优先 `dictionaries.services` / 特权端口；无法识别时显示 `port-NNNN`（不用原始回程 `dst_port` 当“服务”，避免临时端口噪声）。
+
+Sankey 变量：
+
+| 变量 | 作用 |
 |------|------|
-| **UDP 2055** | NetFlow v5/v9 / IPFIX |
-| **UDP 6343** | sFlow |
-| **3030** | Grafana（避开 ntopng 默认 3000） |
-| 8123 | ClickHouse HTTP |
-| 9000 | ClickHouse native |
-| 8080 | GoFlow2 metrics |
-| 9090 | Prometheus |
-
-### 访问
-
-- Grafana: `http://<主机IP>:3030`  
-  - 用户 / 密码：`admin` / `admin`（请立刻改掉）  
-  - LDAP：已启用骨架，编辑 `grafana/ldap.toml` 后 `docker compose up -d grafana`（见 [grafana/LDAP.md](grafana/LDAP.md)）
-  - 预置看板：
-    - **Traffic Overview**（主大屏）：`/d/flow-traffic-overview`  
-      一眼看概况：总量 / 趋势 / L4+Applications 饼图 / Top 源·目的·服务；顶部可筛 **All / East-West (private) / North-South (public)**；点击 Top IP 可进入 IP Lookup
-    - **Traffic Sankey**（分析流向）：`/d/flow-sankey`（含维度与过滤变量）
-    - **Traffic Geo Map**（公网地理）：`/d/flow-geo-map`
-    - **IP Flow Lookup**（单 IP 查询）：`/d/flow-ip-lookup`（填 IP，可选 As Source/Destination/Any）
-    - `viz-ch` / `perfs`：GoFlow2 官方示例
-
-Sankey 过滤变量（仅 Sankey 页）：
-
-| Variable | Usage |
-|----------|--------|
 | Dimension | SrcIP→DstIP / Exporter→DstIP / … |
-| Top N | Nodes kept on each side; rest → Other |
-| Exporter / Protocol / Dst Port | Dropdown; All = no filter |
-| Src/Dst CIDR | e.g. `10.0.0.0/8`; empty = no filter |
+| Top N | 每侧保留节点数，其余 → Other |
+| Exporter / Protocol / Dst Port | 下拉；All = 不过滤 |
+| Src/Dst CIDR | 如 `10.0.0.0/8`；空 = 不过滤 |
 
-> Current flows have `src_as`/`dst_as` = 0 (no BGP/BMP), so no AS dimension.
+> 当前流里 `src_as`/`dst_as` 多为 0（无 BGP/BMP），故无 AS 维度。
 
-GeoIP 字典初始化（已在 10.0.20.201 做过一次；重建时）：
+---
+
+## GeoIP
+
+地图依赖 ClickHouse `geoip_trie`（[DB-IP Lite](https://db-ip.com)，CC BY 4.0，经 [sapics/ip-location-db](https://github.com/sapics/ip-location-db)）。
 
 ```bash
-# 下载 dbip-city-ipv4.csv.gz → 解压 → 导入 ClickHouse → build_geoip_trie.sql
-# 详见 clickhouse/setup_geoip.sh 与 clickhouse/build_geoip_trie.sql
+./deploy.sh --geoip
+# 或：docker compose exec db bash /docker-entrypoint-initdb.d/setup_geoip.sh
 ```
 
-地图数据来源：[DB-IP Lite](https://db-ip.com)（CC BY 4.0），经 [sapics/ip-location-db](https://github.com/sapics/ip-location-db) 分发。
-- ClickHouse: `default` / `flow`
+详见 `clickhouse/setup_geoip.sh`。
 
-### 设备侧导出
+---
 
-把 exporter 指向本机 IP：
+## 设备导出与验流
 
 - NetFlow / NetStream / IPFIX → `<本机IP>:2055`
 - sFlow → `<本机IP>:6343`
 
-华为 NetStream 示例见 `elk-netflow-setup/docs/huawei-firewall-netstream.md`（把目标改成本栈 IP:2055）。
-
-### 验证有没有流进来
+华为 NetStream 可参考仓库外文档 `elk-netflow-setup/docs/huawei-firewall-netstream.md`（目标改成本栈 IP:2055）。
 
 ```bash
-# GoFlow2 是否在听
 docker compose logs -f --tail=50 goflow2
 
-# ClickHouse 行数
-docker compose exec db clickhouse-client --password flow -q \
+docker compose exec db clickhouse-client --password "${CLICKHOUSE_PASSWORD:-flow}" -q \
   'SELECT count() FROM flows_raw'
 
-# 本机抓包
 sudo tcpdump -ni any udp port 2055 -c 20
 sudo tcpdump -ni any udp port 6343 -c 20
 ```
 
-若设备未带采样率，Grafana 里按 `bytes * sampling_rate` 算的流量可能为 0 或异常，需在看板 SQL 里去掉采样倍率或在设备上配置采样。
+若设备未带采样率，看板里 `bytes * sampling_rate` 可能异常，需改 SQL 或在设备上配采样。
 
-## 常用命令
+---
+
+## 运维
 
 ```bash
-cd ~/goflow2-stack   # 或你的 INSTALL_DIR
-./deploy.sh --no-pull          # 仅按当前 compose 重启/应用
+cd ~/goflow2-stack          # 或 INSTALL_DIR
+./deploy.sh --no-pull       # 按当前 compose 应用/重启
 docker compose logs -f db
 docker compose restart goflow2
-docker compose down            # 停服务（保留 volume 数据）
-docker compose down -v         # 停并清空 ClickHouse/Grafana 数据
+docker compose up -d --force-recreate grafana   # 改 ldap.toml / 看板后常用
+docker compose down         # 停服务，保留 volume
+docker compose down -v      # 清空 ClickHouse / Grafana 数据
 ```
-
-## 目录说明
 
 | 路径 | 说明 |
 |------|------|
-| `install.sh` | 从 GitHub clone/更新后调用 `deploy.sh` |
-| `deploy.sh` | 一键 `pull` + `compose up`（可选 `--geoip`） |
-| `docker-compose.yml` | 编排 |
-| `clickhouse/create.sh` | 建 Kafka 引擎表、`flows_raw`、5 分钟聚合 |
-| `clickhouse/flow.proto` | Protobuf schema（与 GoFlow2 `-format=bin` 对应） |
-| `grafana/dashboards/` | 预置看板 JSON |
-| `grafana/ldap.toml.example` | LDAP 模板（本地复制为 `ldap.toml`，勿提交密码） |
+| `install.sh` | clone/更新后调 `deploy.sh` |
+| `deploy.sh` | `pull` + `up`（`--geoip` / `--no-pull`） |
+| `docker-compose.yml` | 编排（Grafana 13.1.2） |
+| `.env.example` | 口令与 Grafana 端口模板 |
+| `clickhouse/create.sh` | Kafka 引擎表、`flows_raw`、5 分钟聚合 |
+| `clickhouse/services.csv` | 知名端口 → 应用名 |
+| `grafana/dashboards/` | 预置看板 |
+| `grafana/ldap.toml.example` | LDAP 模板（复制为 `ldap.toml`，勿提交） |
 | `prometheus/` | 刮取 GoFlow2 metrics |
 
-## 资源建议
+**资源：** 试用 2–4 CPU / 8 GB / SSD ≥ 40 GB；生产加大 CH 盘，Kafka/CH 勿与业务盘混用。
 
-- 试用 / 小流量：2–4 CPU，8 GB RAM，SSD ≥ 40 GB  
-- 生产高流量：加大 ClickHouse 磁盘；Kafka/CH 不要和业务盘混用；按需调采样
+**共存：**
 
-## 与现有系统共存
-
-- 与 **ntopng** 同机：本栈 Grafana 已改到 **3030**；UDP 2055/6343 只能有一个进程占用。  
-- 与 **ELK Logstash** 同机：不要同时占 2055；可改 GoFlow2 监听端口或让设备双导出到不同 IP。  
-- 与 **Akvorado** 二选一即可，不必叠两套 ClickHouse 流分析。
+- **ntopng** 同机：本栈用 **3030**；UDP 2055/6343 只能一家占用。
+- **Logstash** 同机：勿抢 2055。
+- **Akvorado**：二选一即可。

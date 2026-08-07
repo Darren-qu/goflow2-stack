@@ -19,7 +19,8 @@ datasources:
    basicAuth: true
    basicAuthUser: 'default'
    secureJsonData:
-     basicAuthPassword: 'flow'
+     # Expanded from Grafana container env (see docker-compose.yml / .env)
+     basicAuthPassword: ${CLICKHOUSE_PASSWORD}
    withCredentials: false
    isDefault: true
    secureJsonFields: {}

@@ -70,8 +70,19 @@ fi
 
 if [[ ! -f .env && -f .env.example ]]; then
   cp .env.example .env
-  log "created .env from .env.example (optional overrides)"
+  log "created .env from .env.example — edit passwords before production use"
 fi
+
+# Load local secrets for healthchecks / messages (compose also reads .env)
+if [[ -f .env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+CH_PASS="${CLICKHOUSE_PASSWORD:-flow}"
+GF_USER="${GRAFANA_ADMIN_USER:-admin}"
+GF_PORT="${GRAFANA_HOST_PORT:-3030}"
 
 if [[ "${DO_PULL}" -eq 1 ]]; then
   log "pulling images..."
@@ -89,7 +100,7 @@ for _ in $(seq 1 60); do
     break
   fi
   # alpine image may not have wget — try clickhouse-client
-  if run_compose exec -T db clickhouse-client --password flow -q 'SELECT 1' >/dev/null 2>&1; then
+  if run_compose exec -T db clickhouse-client --password "${CH_PASS}" -q 'SELECT 1' >/dev/null 2>&1; then
     ok=1
     break
   fi
@@ -117,10 +128,12 @@ cat <<EOF
 
 [deploy] OK
 
-  Grafana:     http://${HOST_IP}:3030   (admin / admin — change immediately)
-  ClickHouse:  http://${HOST_IP}:8123   (default / flow)
+  Grafana:     http://${HOST_IP}:${GF_PORT}   (${GF_USER} / .env GRAFANA_ADMIN_PASSWORD — change if still default)
   NetFlow:     UDP ${HOST_IP}:2055
   sFlow:       UDP ${HOST_IP}:6343
+
+  Localhost only (not LAN-exposed): ClickHouse 8123/9000, Prometheus 9090, GoFlow2 metrics 8080
+  ClickHouse:  curl -u default:\${CLICKHOUSE_PASSWORD} http://127.0.0.1:8123/ping
 
   Status:  cd ${ROOT} && docker compose ps
   Logs:    docker compose logs -f goflow2

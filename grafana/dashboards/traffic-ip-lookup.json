@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Single-IP investigation with L4/application pies, peers, and services.",
+  "description": "Investigate one IP: inbound/outbound rate, protocol/app mix, and a compact Flow summary (Top N, default 8).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -262,7 +262,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Traffic rate (bits per second). Totals in tables remain in bytes.",
+      "description": "Bits per second for this IP. Outbound = this IP is the flow source; Inbound = this IP is the destination. Use Role to show only one side. Table totals stay in bytes.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -307,36 +307,88 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "time_series",
-          "query": "SELECT\n    $timeSeries AS t,\n    multiIf(\n        if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n          AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip',\n        'both',\n        if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip',\n        'as_source',\n        'as_destination'\n    ) AS direction,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) * 8 / $interval AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY t, direction\nORDER BY t",
+          "query": "SELECT\n    $timeSeries AS t,\n    multiIf(\n        if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip', 'Self',\n        if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip', 'Outbound',\n        'Inbound'\n    ) AS direction,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) * 8 / $interval AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY t, direction\nORDER BY t",
           "refId": "A",
           "table": "flows_raw"
         }
       ],
-      "title": "Traffic trend by role",
+      "title": "Traffic rate (Inbound / Outbound)",
       "type": "timeseries"
     },
     {
       "datasource": "ClickHouse",
+      "description": "Main conversation table for this IP. Outbound = this IP → peer; Inbound = peer → this IP. Application inferred from well-known ports (else port-NNNN). Rows controlled by Top N (default 8).",
       "fieldConfig": {
         "defaults": {
           "custom": {
             "align": "auto",
             "cellOptions": {
               "type": "auto"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
+            },
+            "filterable": true,
+            "inspect": false,
+            "wrapText": false
           }
         },
         "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "direction"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Dir"
+              },
+              {
+                "id": "custom.align",
+                "value": "center"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Inbound": {
+                        "text": "Inbound",
+                        "color": "blue",
+                        "index": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "Outbound": {
+                        "text": "Outbound",
+                        "color": "orange",
+                        "index": 1
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "Self": {
+                        "text": "Self",
+                        "color": "purple",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
           {
             "matcher": {
               "id": "byName",
@@ -348,10 +400,42 @@
                 "value": "Peer"
               },
               {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "auto"
-                }
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open IP Lookup",
+                    "url": "/d/flow-ip-lookup?var-ip=${__value.text}&var-role=any&from=${__from}&to=${__to}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "application"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Application"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "port"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Port"
+              },
+              {
+                "id": "custom.align",
+                "value": "right"
               }
             ]
           },
@@ -363,7 +447,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "App"
+                "value": "Proto"
               }
             ]
           },
@@ -373,6 +457,10 @@
               "options": "traffic"
             },
             "properties": [
+              {
+                "id": "displayName",
+                "value": "Traffic"
+              },
               {
                 "id": "unit",
                 "value": "decbytes"
@@ -380,96 +468,64 @@
               {
                 "id": "custom.cellOptions",
                 "value": {
-                  "mode": "gradient",
                   "type": "gauge",
+                  "mode": "gradient",
                   "valueDisplayMode": "text"
                 }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 0,
-        "y": 12
-      },
-      "id": 6,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "traffic"
-          }
-        ]
-      },
-      "targets": [
-        {
-          "database": "default",
-          "dateColDataType": "date",
-          "dateTimeColDataType": "time_received_ns",
-          "dateTimeType": "DATETIME64",
-          "format": "table",
-          "query": "SELECT\n    peer,\n    protocol,\n    sum(traffic) AS traffic,\n    sum(flows) AS flows\nFROM\n(\n    SELECT\n        if(\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip',\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)),\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr))\n        ) AS peer,\n        multiIf(\n            nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n            dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n            nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n            dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n            concat('port-', toString(dst_port))\n        ) AS protocol,\n        bytes * if(sampling_rate = 0, 1, sampling_rate) AS traffic,\n        1 AS flows\n    FROM $table\n    WHERE $timeFilter\n      AND '$ip' != ''\n      AND (\n            ('$role' = 'any' AND (\n                if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n             OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n            ))\n         OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n         OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n      )\n)\nWHERE peer != '' AND peer != '$ip'\nGROUP BY peer, protocol\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
-          "refId": "A",
-          "table": "flows_raw"
-        }
-      ],
-      "title": "Top peers",
-      "type": "table",
-      "description": "Top peers for the queried IP, with application-layer service names."
-    },
-    {
-      "datasource": "ClickHouse",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "traffic"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "decbytes"
               },
               {
-                "id": "custom.cellOptions",
+                "id": "thresholds",
                 "value": {
-                  "mode": "gradient",
-                  "type": "gauge",
-                  "valueDisplayMode": "text"
+                  "mode": "percentage",
+                  "steps": [
+                    {
+                      "color": "transparent",
+                      "value": null
+                    },
+                    {
+                      "color": "semi-dark-blue",
+                      "value": 0
+                    }
+                  ]
                 }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "packets"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Packets"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "flows"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Flows"
+              },
+              {
+                "id": "unit",
+                "value": "short"
               }
             ]
           }
@@ -477,98 +533,20 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 12
-      },
-      "id": 7,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "traffic"
-          }
-        ]
-      },
-      "targets": [
-        {
-          "database": "default",
-          "dateColDataType": "date",
-          "dateTimeColDataType": "time_received_ns",
-          "dateTimeType": "DATETIME64",
-          "format": "table",
-          "query": "SELECT\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    dst_port,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY protocol, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
-          "refId": "A",
-          "table": "flows_raw"
-        }
-      ],
-      "title": "Top services (proto / dst port)",
-      "type": "table"
-    },
-    {
-      "datasource": "ClickHouse",
-      "description": "Aggregated flow rows for the IP. Adjust Detail rows variable.",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "traffic"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "decbytes"
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 12,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 12
       },
       "id": 8,
       "options": {
         "cellHeight": "sm",
         "footer": {
-          "countRows": false,
-          "fields": "",
+          "show": true,
           "reducer": [
             "sum"
           ],
-          "show": false
+          "countRows": false,
+          "fields": "traffic"
         },
         "showHeader": true,
         "sortBy": [
@@ -585,12 +563,12 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))), IPv6NumToString(sampler_address)) AS exporter,\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) AS source,\n    if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) AS destination,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    src_port,\n    dst_port,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    sum(packets * if(sampling_rate = 0, 1, sampling_rate)) AS packets,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY exporter, source, destination, protocol, src_port, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$detail_rows')",
+          "query": "SELECT\n    direction,\n    peer,\n    application,\n    if(service_port = 0, NULL, service_port) AS port,\n    protocol,\n    sum(traffic) AS traffic,\n    sum(packets) AS packets,\n    sum(flows) AS flows\nFROM\n(\n    SELECT\n        multiIf(\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip', 'Self',\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip', 'Outbound',\n            'Inbound'\n        ) AS direction,\n        if(if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip', if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)), if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr))) AS peer,\n        multiIf(\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n        dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n        dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n      dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n      src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n      concat('port-', toString(if(dst_port > 0, dst_port, src_port)))\n    ) AS application,\n        multiIf(\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dst_port,\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', src_port,\n      dst_port > 0 AND dst_port < 1024, dst_port,\n      src_port > 0 AND src_port < 1024, src_port,\n      if(dst_port > 0, dst_port, src_port)\n    ) AS service_port,\n        ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n        bytes * if(sampling_rate = 0, 1, sampling_rate) AS traffic,\n        packets * if(sampling_rate = 0, 1, sampling_rate) AS packets,\n        1 AS flows\n    FROM $table\n    WHERE $timeFilter\n      AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip' OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\n)\nGROUP BY direction, peer, application, port, protocol\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
           "refId": "A",
           "table": "flows_raw"
         }
       ],
-      "title": "Flow details ($ip)",
+      "title": "Flow summary",
       "type": "table"
     },
     {
@@ -653,7 +631,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Application inferred from well-known ports for this IP.",
+      "description": "Application mix from well-known ports. Unknown ports are labeled port-NNNN.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -701,7 +679,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  multiIf(\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n    dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n    dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n    concat('port-', toString(dst_port))\n  ) AS application,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY application\nORDER BY traffic DESC\nLIMIT 12",
+          "query": "SELECT\n  multiIf(\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '',\n        dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '',\n        dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n      dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n      src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n      concat('port-', toString(if(dst_port > 0, dst_port, src_port)))\n    ) AS application,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND '$ip' != ''\n  AND (\n        ('$role' = 'any' AND (\n            if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip'\n         OR if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip'\n        ))\n     OR ('$role' = 'src' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), IPv6NumToString(src_addr)) = '$ip')\n     OR ('$role' = 'dst' AND if(etype = 2048, IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), IPv6NumToString(dst_addr)) = '$ip')\n  )\nGROUP BY application\nORDER BY traffic DESC\nLIMIT 12",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -716,7 +694,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 100
+        "y": 20
       },
       "title": "",
       "transparent": true,
@@ -769,7 +747,7 @@
         },
         "hide": 0,
         "includeAll": false,
-        "label": "As",
+        "label": "Role",
         "multi": false,
         "name": "role",
         "options": [
@@ -780,87 +758,37 @@
           },
           {
             "selected": false,
-            "text": "Source",
+            "text": "Outbound (src)",
             "value": "src"
           },
           {
             "selected": false,
-            "text": "Destination",
+            "text": "Inbound (dst)",
             "value": "dst"
           }
         ],
-        "query": "Any : any,Source : src,Destination : dst",
+        "query": "Any : any,Outbound (src) : src,Inbound (dst) : dst",
         "skipUrlSync": false,
         "type": "custom"
       },
       {
-        "current": {
-          "selected": true,
-          "text": "20",
-          "value": "20"
-        },
-        "hide": 0,
-        "includeAll": false,
-        "label": "Top N",
-        "multi": false,
         "name": "topn",
-        "options": [
-          {
-            "selected": false,
-            "text": "10",
-            "value": "10"
-          },
-          {
-            "selected": true,
-            "text": "20",
-            "value": "20"
-          },
-          {
-            "selected": false,
-            "text": "50",
-            "value": "50"
-          }
-        ],
-        "query": "10,20,50",
-        "skipUrlSync": false,
-        "type": "custom"
-      },
-      {
+        "type": "textbox",
+        "label": "Top N",
+        "query": "8",
         "current": {
           "selected": true,
-          "text": "50",
-          "value": "50"
+          "text": "8",
+          "value": "8"
         },
-        "hide": 0,
-        "includeAll": false,
-        "label": "Detail rows",
-        "multi": false,
-        "name": "detail_rows",
         "options": [
           {
-            "selected": false,
-            "text": "20",
-            "value": "20"
-          },
-          {
             "selected": true,
-            "text": "50",
-            "value": "50"
-          },
-          {
-            "selected": false,
-            "text": "100",
-            "value": "100"
-          },
-          {
-            "selected": false,
-            "text": "200",
-            "value": "200"
+            "text": "8",
+            "value": "8"
           }
         ],
-        "query": "20,50,100,200",
-        "skipUrlSync": false,
-        "type": "custom"
+        "hide": 0
       }
     ]
   },
@@ -872,6 +800,6 @@
   "timezone": "browser",
   "title": "IP Flow Lookup",
   "uid": "flow-ip-lookup",
-  "version": 26,
+  "version": 36,
   "weekStart": ""
 }

@@ -1,9 +1,9 @@
 # GoFlow2 → Kafka → ClickHouse → Grafana
 # Based on netsampler/goflow2 compose/kcg (adapted for standalone deploy)
 #
-# Listen:  NetFlow/IPFIX UDP 2055, sFlow UDP 6343
-# UI:      http://<host>:3030  (admin / admin)
-# CH HTTP: http://<host>:8123  (default / flow)
+# Public (all interfaces): UDP 2055/6343 (flows), TCP 3030 (Grafana)
+# Localhost only:         8080 metrics, 8123/9000 ClickHouse, 9090 Prometheus
+# Secrets:                copy .env.example → .env (never commit .env)
 
 services:
   kafka:
@@ -35,9 +35,9 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "2055:2055/udp"   # NetFlow v5/v9 / IPFIX
-      - "6343:6343/udp"   # sFlow
-      - "8080:8080"       # Prometheus metrics
+      - "2055:2055/udp"           # NetFlow v5/v9 / IPFIX (must be reachable by exporters)
+      - "6343:6343/udp"           # sFlow
+      - "127.0.0.1:8080:8080"     # Prometheus metrics (localhost only)
     restart: unless-stopped
     command:
       - -transport=kafka
@@ -49,10 +49,10 @@ services:
     image: clickhouse/clickhouse-server:25.11-alpine
     environment:
       CLICKHOUSE_DO_NOT_CHOWN: "1"
-      CLICKHOUSE_PASSWORD: flow
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-flow}
     ports:
-      - "8123:8123"   # HTTP
-      - "9000:9000"   # native (optional)
+      - "127.0.0.1:8123:8123"   # HTTP — localhost only
+      - "127.0.0.1:9000:9000"   # native — localhost only
     restart: unless-stopped
     volumes:
       - ./clickhouse:/docker-entrypoint-initdb.d/
@@ -69,13 +69,17 @@ services:
         hard: 262144
 
   grafana:
-    image: grafana/grafana:12.1.0
+    image: grafana/grafana:13.1.2
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      # Used by datasources-ch.yml provisioning (${CLICKHOUSE_PASSWORD})
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-flow}
+      # Altinity ClickHouse plugin (id still vertamedia-*); Sankey remains unsigned
       GF_INSTALL_PLUGINS: vertamedia-clickhouse-datasource,netsage-sankey-panel
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: netsage-sankey-panel
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
       # Allow HTML <style> in Text panels (used so table IP text can be selected/copied)
       GF_PANELS_DISABLE_SANITIZE_HTML: "true"
       # LDAP (edit ./grafana/ldap.toml). Local admin still works until you disable it.
@@ -85,8 +89,8 @@ services:
       # Optional after LDAP works: set to "false" to force LDAP-only logins
       # GF_AUTH_DISABLE_LOGIN_FORM: "false"
     ports:
-      # 3030 避免与 ntopng 默认 3000 冲突
-      - "3030:3000"
+      # 3030 避免与 ntopng 默认 3000 冲突（用户访问入口）
+      - "${GRAFANA_HOST_PORT:-3030}:3000"
     restart: unless-stopped
     volumes:
       - ./grafana/datasources-ch.yml:/etc/grafana/provisioning/datasources/datasources-ch.yml:ro
@@ -101,7 +105,7 @@ services:
   prometheus:
     image: prom/prometheus:v3.7.3
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"   # UI/API — localhost only
     restart: unless-stopped
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
