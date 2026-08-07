@@ -416,10 +416,18 @@
                 "value": [
                   {
                     "title": "Open IP Lookup",
-                    "url": "/d/flow-ip-lookup?var-ip=${__value.raw}&${__url_time_range}",
-                    "targetBlank": false
+                    "url": "/d/flow-ip-lookup?orgId=1&var-ip=${__value.raw}&var-role=any&from=${__from}&to=${__to}",
+                    "targetBlank": false,
+                    "oneClick": true
                   }
                 ]
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
               }
             ]
           },
@@ -519,10 +527,18 @@
                 "value": [
                   {
                     "title": "Open IP Lookup",
-                    "url": "/d/flow-ip-lookup?var-ip=${__value.raw}&${__url_time_range}",
-                    "targetBlank": false
+                    "url": "/d/flow-ip-lookup?orgId=1&var-ip=${__value.raw}&var-role=any&from=${__from}&to=${__to}",
+                    "targetBlank": false,
+                    "oneClick": true
                   }
                 ]
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
               }
             ]
           },
@@ -778,6 +794,6 @@
   "timezone": "browser",
   "title": "Traffic Overview",
   "uid": "flow-traffic-overview",
-  "version": 9,
+  "version": 10,
   "weekStart": ""
 }
