@@ -423,7 +423,7 @@
       ],
       "title": "Top peers",
       "type": "table",
-      "description": "Peer IPs for this host. Change the IP variable above to investigate another address."
+      "description": "Top peers for the queried IP, with application-layer service names."
     },
     {
       "datasource": "ClickHouse",
@@ -846,6 +846,6 @@
   "timezone": "browser",
   "title": "IP Flow Lookup",
   "uid": "flow-ip-lookup",
-  "version": 7,
+  "version": 20,
   "weekStart": ""
 }
