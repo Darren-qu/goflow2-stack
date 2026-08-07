@@ -105,6 +105,65 @@ Sankey 变量：
 
 ---
 
+## 数据保留（日志 / 流量生命周期）
+
+本栈把「流数据」分层存放，**ClickHouse 是唯一长期真相**；Kafka 只做短缓冲。
+
+```text
+设备 → GoFlow2 → Kafka（默认保留 48h）→ ClickHouse
+                                      ├─ flows_raw   明细（默认 30 天 TTL）
+                                      └─ flows_5m    5 分钟聚合（默认 180 天 TTL）
+```
+
+| 层 | 用途 | 默认保留 | 怎么清 |
+|----|------|----------|--------|
+| Kafka `flows` | 写入缓冲，防 ClickHouse 短暂抖动 | **48 小时** | broker `log.retention.hours` |
+| `flows_raw` | IP Lookup / Top 表 / 明细排查 | **30 天** | MergeTree **TTL**（按 `date` 分区整段丢弃） |
+| `flows_5m` | 较长趋势（若看板用到） | **180 天** | 同上 |
+| GeoIP 字典表 | 地图坐标 | 长期保留 | 不自动删 |
+| Grafana / Prometheus | UI 与自监控 | volume 内 | 不自动删流量数据 |
+
+**为何这样分：**
+
+- 明细行数涨得最快，30 天够日常排障与多数安全回溯；要更严合规可把 `.env` 改成 `FLOWS_RAW_TTL_DAYS=90`。
+- 聚合便宜一个数量级，可留半年看趋势。
+- `ttl_only_drop_parts=1`：整日分区过期后直接丢 part，比逐行删省 IO。
+
+**配置（`.env`）：**
+
+```bash
+FLOWS_RAW_TTL_DAYS=30
+FLOWS_5M_TTL_DAYS=180
+KAFKA_LOG_RETENTION_HOURS=48
+```
+
+`./deploy.sh` 会在 ClickHouse 就绪后执行 `clickhouse/apply_retention.sh`（对已有表 `ALTER … MODIFY TTL`，可重复跑）。只改保留策略时：
+
+```bash
+# 改 .env 中 FLOWS_*_TTL_DAYS 后刷新 CH TTL
+docker compose exec -e CLICKHOUSE_PASSWORD -e FLOWS_RAW_TTL_DAYS -e FLOWS_5M_TTL_DAYS \
+  db bash /docker-entrypoint-initdb.d/apply_retention.sh
+
+# 改 KAFKA_LOG_RETENTION_HOURS 后必须一起重建下游（否则 GoFlow2/CH 会断流）
+docker compose up -d --force-recreate kafka goflow2 db
+```
+
+> **注意：** 单独 `force-recreate kafka` 后，GoFlow2 / ClickHouse Kafka 引擎仍连旧 broker，看板会出现「有历史、无最新」。务必同时 recreate **`goflow2` + `db`**。
+
+**空间观察：**
+
+```bash
+docker compose exec db clickhouse-client --password "${CLICKHOUSE_PASSWORD:-flow}" -q "
+SELECT table, formatReadableSize(sum(bytes_on_disk)) AS size, min(partition), max(partition)
+FROM system.parts
+WHERE active AND table IN ('flows_raw','flows_5m')
+GROUP BY table"
+```
+
+过期分区在后台 merge 时删除，不是改 TTL 瞬间腾空；磁盘告警仍建议在主机监控里盯 Docker 数据盘。
+
+---
+
 ## GeoIP
 
 地图依赖 ClickHouse `geoip_trie`（[DB-IP Lite](https://db-ip.com)，CC BY 4.0，经 [sapics/ip-location-db](https://github.com/sapics/ip-location-db)）。
@@ -147,6 +206,8 @@ cd ~/goflow2-stack          # 或 INSTALL_DIR
 docker compose logs -f db
 docker compose restart goflow2
 docker compose up -d --force-recreate grafana   # 改 ldap.toml / 看板后常用
+# 改 Kafka 相关配置后（保留时长等）— 三者一起重建，避免断流：
+docker compose up -d --force-recreate kafka goflow2 db
 docker compose down         # 停服务，保留 volume
 docker compose down -v      # 清空 ClickHouse / Grafana 数据
 ```
@@ -157,7 +218,8 @@ docker compose down -v      # 清空 ClickHouse / Grafana 数据
 | `deploy.sh` | `pull` + `up`（`--geoip` / `--no-pull`） |
 | `docker-compose.yml` | 编排（Grafana 13.1.2） |
 | `.env.example` | 口令与 Grafana 端口模板 |
-| `clickhouse/create.sh` | Kafka 引擎表、`flows_raw`、5 分钟聚合 |
+| `clickhouse/create.sh` | Kafka 引擎表、`flows_raw`、5 分钟聚合（含默认 TTL） |
+| `clickhouse/apply_retention.sh` | 对已有表应用/刷新 TTL（deploy 自动跑） |
 | `clickhouse/services.csv` | 知名端口 → 应用名 |
 | `grafana/dashboards/` | 预置看板 |
 | `grafana/ldap.toml.example` | LDAP 模板（复制为 `ldap.toml`，勿提交） |

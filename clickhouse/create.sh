@@ -84,7 +84,10 @@ clickhouse client -n <<-EOSQL
         packets UInt64
     ) ENGINE = MergeTree()
     PARTITION BY date
-    ORDER BY time_received_ns;
+    ORDER BY time_received_ns
+    -- Detail flows: keep 30 days (override later via apply_retention.sh / .env)
+    TTL date + toIntervalDay(30)
+    SETTINGS ttl_only_drop_parts = 1;
 
     CREATE MATERIALIZED VIEW IF NOT EXISTS flows_raw_view TO flows_raw
     AS SELECT
@@ -132,7 +135,10 @@ clickhouse client -n <<-EOSQL
         count UInt64
     ) ENGINE = SummingMergeTree()
     PARTITION BY date
-    ORDER BY (date, timeslot, src_as, dst_as, \`etypeMap.etype\`);
+    ORDER BY (date, timeslot, src_as, dst_as, \`etypeMap.etype\`)
+    -- 5-minute aggregates: keep 180 days for longer trends
+    TTL date + toIntervalDay(180)
+    SETTINGS ttl_only_drop_parts = 1;
 
     CREATE MATERIALIZED VIEW IF NOT EXISTS flows_5m_view TO flows_5m
     AS

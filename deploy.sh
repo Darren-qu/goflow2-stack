@@ -113,6 +113,14 @@ if [[ "${ok}" -eq 1 ]]; then
   log "ensuring services dictionary..."
   run_compose exec -T db bash /docker-entrypoint-initdb.d/init_services.sh \
     || log "WARN: services dictionary init failed (map panels still work; service names may be port-only)"
+
+  log "applying ClickHouse retention TTL (raw=${FLOWS_RAW_TTL_DAYS:-30}d, 5m=${FLOWS_5M_TTL_DAYS:-180}d)..."
+  run_compose exec -T \
+    -e "CLICKHOUSE_PASSWORD=${CH_PASS}" \
+    -e "FLOWS_RAW_TTL_DAYS=${FLOWS_RAW_TTL_DAYS:-30}" \
+    -e "FLOWS_5M_TTL_DAYS=${FLOWS_5M_TTL_DAYS:-180}" \
+    db bash /docker-entrypoint-initdb.d/apply_retention.sh \
+    || log "WARN: retention TTL apply failed — check clickhouse/apply_retention.sh"
 fi
 
 if [[ "${DO_GEOIP}" -eq 1 ]]; then
@@ -139,6 +147,9 @@ cat <<EOF
   Logs:    docker compose logs -f goflow2
   LDAP:    edit grafana/ldap.toml → docker compose up -d --force-recreate grafana
            see grafana/LDAP.md
+  Kafka:   after changing KAFKA_LOG_RETENTION_* always recreate together:
+           docker compose up -d --force-recreate kafka goflow2 db
+           (recreating kafka alone breaks the pipeline until goflow2+db reconnect)
 
 EOF
 
