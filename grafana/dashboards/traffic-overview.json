@@ -377,16 +377,14 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "To copy an IP: select the text, or click the cell → Inspect → Copy. Traffic values are in bytes.",
+      "description": "East-West: private IPs. North-South: private sources / public destinations. All: any.",
       "fieldConfig": {
         "defaults": {
           "custom": {
             "align": "auto",
             "cellOptions": {
               "type": "auto"
-            },
-            "inspect": false,
-            "filterable": false
+            }
           },
           "thresholds": {
             "mode": "absolute",
@@ -411,21 +409,13 @@
               },
               {
                 "id": "custom.width",
-                "value": 160
+                "value": 150
               },
               {
                 "id": "custom.cellOptions",
                 "value": {
                   "type": "auto"
                 }
-              },
-              {
-                "id": "custom.filterable",
-                "value": false
-              },
-              {
-                "id": "custom.inspect",
-                "value": true
               }
             ]
           },
@@ -438,6 +428,14 @@
               {
                 "id": "unit",
                 "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
               }
             ]
           }
@@ -477,16 +475,14 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "To copy an IP: select the text, or click the cell → Inspect → Copy. Traffic values are in bytes.",
+      "description": "East-West: private IPs. North-South: public destinations. All: any.",
       "fieldConfig": {
         "defaults": {
           "custom": {
             "align": "auto",
             "cellOptions": {
               "type": "auto"
-            },
-            "inspect": false,
-            "filterable": false
+            }
           },
           "thresholds": {
             "mode": "absolute",
@@ -511,21 +507,13 @@
               },
               {
                 "id": "custom.width",
-                "value": 160
+                "value": 150
               },
               {
                 "id": "custom.cellOptions",
                 "value": {
                   "type": "auto"
                 }
-              },
-              {
-                "id": "custom.filterable",
-                "value": false
-              },
-              {
-                "id": "custom.inspect",
-                "value": true
               }
             ]
           },
@@ -538,6 +526,14 @@
               {
                 "id": "unit",
                 "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
               }
             ]
           }
@@ -739,7 +735,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<style>/* Allow selecting/copying IP text in tables */[data-testid='table'] td,[data-testid='data-testid table body'] td,div[role='gridcell'],.table-panel-tables-wrap td,td[role='cell']{user-select:text!important;-webkit-user-select:text!important;-moz-user-select:text!important;cursor:text!important;}</style>"
+        "content": "<style>[data-testid='table'] td,div[role='gridcell'],.table-panel-tables-wrap td,td[role='cell']{user-select:text!important;-webkit-user-select:text!important;-moz-user-select:text!important;}</style>"
       }
     }
   ],
@@ -794,6 +790,6 @@
   "timezone": "browser",
   "title": "Traffic Overview",
   "uid": "flow-traffic-overview",
-  "version": 25,
+  "version": 26,
   "weekStart": ""
 }

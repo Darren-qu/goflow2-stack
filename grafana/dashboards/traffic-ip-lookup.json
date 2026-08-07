@@ -323,9 +323,7 @@
             "align": "auto",
             "cellOptions": {
               "type": "auto"
-            },
-            "inspect": false,
-            "filterable": false
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -350,22 +348,10 @@
                 "value": "Peer"
               },
               {
-                "id": "custom.width",
-                "value": 160
-              },
-              {
                 "id": "custom.cellOptions",
                 "value": {
                   "type": "auto"
                 }
-              },
-              {
-                "id": "custom.filterable",
-                "value": false
-              },
-              {
-                "id": "custom.inspect",
-                "value": true
               }
             ]
           },
@@ -390,6 +376,14 @@
               {
                 "id": "unit",
                 "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
               }
             ]
           }
@@ -434,7 +428,7 @@
       ],
       "title": "Top peers",
       "type": "table",
-      "description": "To copy a Peer IP: select the text, or click the cell → Inspect → Copy."
+      "description": "Top peers for the queried IP, with application-layer service names."
     },
     {
       "datasource": "ClickHouse",
@@ -733,7 +727,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<style>/* Allow selecting/copying IP text in tables */[data-testid='table'] td,[data-testid='data-testid table body'] td,div[role='gridcell'],.table-panel-tables-wrap td,td[role='cell']{user-select:text!important;-webkit-user-select:text!important;-moz-user-select:text!important;cursor:text!important;}</style>"
+        "content": "<style>[data-testid='table'] td,div[role='gridcell'],.table-panel-tables-wrap td,td[role='cell']{user-select:text!important;-webkit-user-select:text!important;-moz-user-select:text!important;}</style>"
       }
     }
   ],
@@ -878,6 +872,6 @@
   "timezone": "browser",
   "title": "IP Flow Lookup",
   "uid": "flow-ip-lookup",
-  "version": 25,
+  "version": 26,
   "weekStart": ""
 }
