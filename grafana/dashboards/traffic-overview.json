@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "At-a-glance traffic overview with L4/application pies. Scope: All / East-West / North-South.",
+  "description": "At-a-glance traffic overview with L4/application pies and Top AS (after ./deploy.sh --asn). Scope: All / East-West / North-South.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -377,7 +377,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Click IP → Open IP Lookup (new tab). East-West: private IPs. North-South: private sources / public destinations. All: any. Row count from Top N variable (default 8).",
+      "description": "Click IP \u2192 Open IP Lookup (new tab). East-West: private IPs. North-South: private sources / public destinations. All: any. Row count from Top N variable (default 8).",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -481,7 +481,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Click IP → Open IP Lookup (new tab). East-West: private IPs. North-South: public destinations. All: any. Row count from Top N variable (default 8).",
+      "description": "Click IP \u2192 Open IP Lookup (new tab). East-West: private IPs. North-South: public destinations. All: any. Row count from Top N variable (default 8).",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -674,7 +674,7 @@
     },
     {
       "datasource": "ClickHouse",
-      "description": "Application inferred from well-known destination ports (HTTPS, DNS, SSH, …).",
+      "description": "Application inferred from well-known destination ports (HTTPS, DNS, SSH, \u2026).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -750,6 +750,184 @@
         },
         "content": "<style>[data-testid='table'] td,div[role='gridcell'],.table-panel-tables-wrap td,td[role='cell']{user-select:text!important;-webkit-user-select:text!important;-moz-user-select:text!important;}</style>"
       }
+    },
+    {
+      "datasource": "ClickHouse",
+      "description": "Requires IP\u2192ASN enrichment (./deploy.sh --asn). Row count from Top N. AS0/private excluded.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "src_asn"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "ASN"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "id": 40,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT\n  if(src_as = 0, 'AS0 / private', concat('AS', toString(src_as))) AS src_asn,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND etype = 2048\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND (\n        (\n          (isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n        OR (\n          NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n      )\n    )\n  )\n  AND src_as != 0\nGROUP BY src_as\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ],
+      "title": "Top Source AS",
+      "type": "table"
+    },
+    {
+      "datasource": "ClickHouse",
+      "description": "Requires IP\u2192ASN enrichment (./deploy.sh --asn). Row count from Top N. AS0/private excluded.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dst_asn"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "ASN"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "id": 41,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "traffic"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT\n  if(dst_as = 0, 'AS0 / private', concat('AS', toString(dst_as))) AS dst_asn,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    '$scope' = 'all'\n    OR (\n      '$scope' = 'ew'\n      AND etype = 2048\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10')\n      )\n      AND (\n        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10')\n      )\n    )\n    OR (\n      '$scope' = 'ns'\n      AND etype = 2048\n      AND (\n        (\n          (isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n        OR (\n          NOT (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '100.64.0.0/10'))\n          AND (\n            isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '10.0.0.0/8')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '172.16.0.0/12')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '192.168.0.0/16')\n            OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '100.64.0.0/10'))\n        )\n      )\n    )\n  )\n  AND dst_as != 0\nGROUP BY dst_as\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$topn')",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ],
+      "title": "Top Destination AS",
+      "type": "table"
     }
   ],
   "refresh": "30s",
@@ -822,6 +1000,6 @@
   "timezone": "browser",
   "title": "Traffic Overview",
   "uid": "flow-traffic-overview",
-  "version": 28,
+  "version": 29,
   "weekStart": ""
 }

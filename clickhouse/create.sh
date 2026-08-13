@@ -102,6 +102,8 @@ clickhouse client -n <<-EOSQL
         src_addr,
         dst_addr,
 
+        -- Device/BGP AS when present. Optional: ./deploy.sh --asn replaces this MV
+        -- so src_as/dst_as=0 are filled from asn_trie (IPv4 IP→ASN).
         src_as,
         dst_as,
 

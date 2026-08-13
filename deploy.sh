@@ -4,6 +4,7 @@
 # Usage:
 #   ./deploy.sh
 #   ./deploy.sh --geoip
+#   ./deploy.sh --asn
 #   ./deploy.sh --pull
 #   sudo ./deploy.sh          # if your user is not in the docker group
 #
@@ -17,6 +18,7 @@ cd "${ROOT}"
 
 COMPOSE="${COMPOSE:-docker compose}"
 DO_GEOIP=0
+DO_ASN=0
 DO_PULL=1
 
 usage() {
@@ -25,6 +27,7 @@ Usage: ./deploy.sh [options]
 
 Options:
   --geoip     After up, load DB-IP GeoIP into ClickHouse (for map panels)
+  --asn       After up, load IP→ASN into ClickHouse and enrich src_as/dst_as
   --no-pull   Skip docker compose pull
   -h, --help  Show help
 EOF
@@ -33,6 +36,7 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --geoip) DO_GEOIP=1; shift ;;
+    --asn) DO_ASN=1; shift ;;
     --no-pull) DO_PULL=0; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
@@ -125,8 +129,18 @@ fi
 
 if [[ "${DO_GEOIP}" -eq 1 ]]; then
   log "loading GeoIP (may take several minutes)..."
-  run_compose exec -T db bash /docker-entrypoint-initdb.d/setup_geoip.sh \
+  run_compose exec -T \
+    -e "CLICKHOUSE_PASSWORD=${CH_PASS}" \
+    db bash /docker-entrypoint-initdb.d/setup_geoip.sh \
     || die "GeoIP setup failed — see clickhouse/setup_geoip.sh"
+fi
+
+if [[ "${DO_ASN}" -eq 1 ]]; then
+  log "loading ASN + enabling IP→ASN enrichment (may take a few minutes)..."
+  run_compose exec -T \
+    -e "CLICKHOUSE_PASSWORD=${CH_PASS}" \
+    db bash /docker-entrypoint-initdb.d/setup_asn.sh \
+    || die "ASN setup failed — see clickhouse/setup_asn.sh"
 fi
 
 HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"

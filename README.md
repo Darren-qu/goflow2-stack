@@ -35,6 +35,9 @@ WITH_DOCKER=1 curl -fsSL https://raw.githubusercontent.com/Darren-qu/goflow2-sta
 
 # Also load GeoIP (map dashboard; slower)
 WITH_GEOIP=1 curl -fsSL https://raw.githubusercontent.com/Darren-qu/goflow2-stack/main/install.sh | bash
+
+# Also load IP→ASN enrichment (Top AS / Sankey SrcAS→DstAS)
+WITH_ASN=1 curl -fsSL https://raw.githubusercontent.com/Darren-qu/goflow2-stack/main/install.sh | bash
 ```
 
 Manual:
@@ -45,6 +48,7 @@ cd goflow2-stack
 cp .env.example .env          # change default passwords
 ./deploy.sh                   # pull + up
 ./deploy.sh --geoip           # optional GeoIP for maps
+./deploy.sh --asn             # optional IP→ASN for src_as/dst_as
 ```
 
 Install dir: `$HOME/goflow2-stack` (override with `INSTALL_DIR=...`).  
@@ -82,7 +86,7 @@ UI: `http://<host-ip>:3030` (see `GRAFANA_ADMIN_*` in `.env`; default `admin`/`a
 
 | Dashboard | Path | Notes |
 |-----------|------|-------|
-| **Traffic Overview** | `/d/flow-traffic-overview` | Totals, bps trend, L4/app pies, Top sources/destinations/services; Direction = All / East-West / North-South; **Top N** default 8 |
+| **Traffic Overview** | `/d/flow-traffic-overview` | Totals, bps trend, L4/app pies, Top sources/destinations/services/**AS**; Direction = All / East-West / North-South; **Top N** default 8 |
 | **IP Flow Lookup** | `/d/flow-ip-lookup` | Single IP: inbound/outbound, inferred apps, Flow summary; Role = Any / Outbound / Inbound |
 | **Traffic Sankey** | `/d/flow-sankey` | Dimension + exporter/protocol/port/CIDR filters; Top N / Detail rows default 8 |
 | **Traffic Geo Map** | `/d/flow-geo-map` | Public IP map (starts at **world** view); Map IP = Destination / Source; Top N default 8 |
@@ -96,12 +100,12 @@ Sankey variables:
 
 | Variable | Role |
 |----------|------|
-| Dimension | SrcIP→DstIP / Exporter→DstIP / … |
+| Dimension | SrcIP→DstIP / Exporter→DstIP / … / **SrcAS→DstAS** (needs `--asn`) |
 | Top N | Nodes kept per side; rest → Other |
 | Exporter / Protocol / Dst Port | Dropdown; All = no filter |
 | Src/Dst CIDR | e.g. `10.0.0.0/8`; empty = no filter |
 
-> `src_as` / `dst_as` are often 0 without BGP/BMP, so there is no AS dimension yet.
+> Without `./deploy.sh --asn`, device-exported `src_as`/`dst_as` are often **0**, so AS panels/dimension stay empty.
 
 ---
 
@@ -121,6 +125,7 @@ Devices → GoFlow2 → Kafka (48h default) → ClickHouse
 | `flows_raw` | Lookup / tops / forensics | **30 days** | MergeTree **TTL** (drop day partitions) |
 | `flows_5m` | Longer trends | **180 days** | same |
 | GeoIP tables | Map coordinates | Keep | not TTL’d with flows |
+| ASN table / `asn_trie` | IP→AS enrichment | Keep | refresh via `./deploy.sh --asn` |
 | Grafana / Prometheus | UI / self-metrics | volumes | not flow TTL |
 
 **Why this split:** raw rows grow fastest (30d is enough for day‑to‑day ops; set `FLOWS_RAW_TTL_DAYS=90` if needed). Aggregates are cheap. `ttl_only_drop_parts=1` drops whole day parts when expired.
@@ -169,6 +174,36 @@ Maps use ClickHouse `geoip_trie` ([DB-IP Lite](https://db-ip.com), CC BY 4.0, vi
 ```
 
 See `clickhouse/setup_geoip.sh`.
+
+---
+
+## ASN (IP → AS number)
+
+When exporters omit BGP AS fields, load an IPv4 ASN dictionary and rewrite `flows_raw_view` so **new** rows get `src_as` / `dst_as` from IP lookup (device non-zero AS is kept).
+
+```bash
+./deploy.sh --asn
+# or:
+docker compose exec -e CLICKHOUSE_PASSWORD db bash /docker-entrypoint-initdb.d/setup_asn.sh
+```
+
+| Piece | Role |
+|-------|------|
+| `asn` table + `asn_trie` | IP_TRIE dict from [iptoasn](https://github.com/sapics/ip-location-db) IPv4 CIDR CSV |
+| `flows_raw_view` | `if(src_as=0, dictGet(...), src_as)` (same for dst) |
+| Grafana | Overview Top Source/Dest AS; Sankey **SrcAS → DstAS** |
+
+### What runs automatically after `--asn`
+
+| Automatic | Not automatic |
+|-----------|----------------|
+| **New** flows: `src_as` / `dst_as` filled when device sent `0` (IPv4 via `asn_trie`) | Historical rows already in `flows_raw` (not backfilled) |
+| Enrichment stays on across restarts (MV + dictionary in ClickHouse volume) | IP→ASN **database refresh** — CSV is not downloaded on a schedule |
+| Device-exported non-zero AS is kept as-is | Private / unrouted IPs (lookup miss → stay `0`) |
+
+Re-run `./deploy.sh --asn` (or `setup_asn.sh`) every few months, or when AS ownership looks stale, to refresh the CSV. The dictionary `LIFETIME` only reloads the already-imported table; it does not fetch updates from the network.
+
+See `clickhouse/setup_asn.sh`.
 
 ---
 
@@ -251,11 +286,13 @@ docker compose down -v      # wipe ClickHouse / Grafana data
 | Path | Role |
 |------|------|
 | `install.sh` | Clone/update then `deploy.sh` |
-| `deploy.sh` | `pull` + `up` (`--geoip` / `--no-pull`) |
+| `deploy.sh` | `pull` + `up` (`--geoip` / `--asn` / `--no-pull`) |
 | `docker-compose.yml` | Stack (Grafana 13.1.2) |
 | `.env.example` | Password / port template |
 | `clickhouse/create.sh` | Kafka engine, `flows_raw`, 5m agg (+ default TTL) |
 | `clickhouse/apply_retention.sh` | Apply/refresh TTL on existing tables |
+| `clickhouse/setup_geoip.sh` | Optional DB-IP city → `geoip_trie` |
+| `clickhouse/setup_asn.sh` | Optional IP→ASN → `asn_trie` + enrich MV |
 | `clickhouse/services.csv` | Well-known port → app name |
 | `grafana/dashboards/` | Provisioned dashboards |
 | `grafana/ldap.toml.example` | LDAP template (copy to `ldap.toml`; do not commit secrets) |

@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Flow paths as Sankey. Pick dimension, filter exporter/protocol/port/CIDR. Top N (default 8) controls node count; Detail rows for the table below.",
+  "description": "Flow paths as Sankey. Pick dimension (incl. SrcAS\u2192DstAS after ./deploy.sh --asn), filter exporter/protocol/port/CIDR. Top N (default 8) controls node count; Detail rows for the table below.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -101,7 +101,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "WITH\n    flows AS\n    (\n        SELECT\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n               IPv6NumToString(sampler_address)) AS exporter,\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n               IPv6NumToString(src_addr)) AS src_ip,\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n               IPv6NumToString(dst_addr)) AS dst_ip,\n            ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) AS protocol,\n            concat(\n                ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n                '/',\n                toString(dst_port)\n            ) AS dst_service,\n            bytes * if(sampling_rate = 0, 1, sampling_rate) AS traffic\n        FROM $table\n        WHERE $timeFilter\n          AND ('$exporter' = 'All' OR if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n               IPv6NumToString(sampler_address)) = '$exporter')\n          AND ('$protocol' = 'All' OR ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) = '$protocol')\n          AND ('$dst_port' = 'All' OR toString(dst_port) = '$dst_port')\n          AND (\n                '$src_net' = ''\n             OR (\n                    etype = 2048\n                AND isIPAddressInRange(\n                        IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n                        '$src_net'\n                    )\n                )\n          )\n          AND (\n                '$dst_net' = ''\n             OR (\n                    etype = 2048\n                AND isIPAddressInRange(\n                        IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n                        '$dst_net'\n                    )\n                )\n          )\n    ),\n    labeled AS\n    (\n        SELECT\n            multiIf(\n                '$dimension' = 'exp_dst', exporter,\n                '$dimension' = 'src_port', src_ip,\n                '$dimension' = 'proto_port', protocol,\n                '$dimension' = 'exp_src', exporter,\n                src_ip\n            ) AS src_node,\n            multiIf(\n                '$dimension' = 'exp_dst', dst_ip,\n                '$dimension' = 'src_port', dst_service,\n                '$dimension' = 'proto_port', dst_service,\n                '$dimension' = 'exp_src', src_ip,\n                dst_ip\n            ) AS dst_node,\n            traffic\n        FROM flows\n    ),\n    top_src AS\n    (\n        SELECT src_node\n        FROM labeled\n        GROUP BY src_node\n        ORDER BY sum(traffic) DESC\n        LIMIT toUInt64OrZero('$topn')\n    ),\n    top_dst AS\n    (\n        SELECT dst_node\n        FROM labeled\n        GROUP BY dst_node\n        ORDER BY sum(traffic) DESC\n        LIMIT toUInt64OrZero('$topn')\n    )\nSELECT\n    if(src_node IN (SELECT src_node FROM top_src), src_node, 'Other') AS source,\n    if(dst_node IN (SELECT dst_node FROM top_dst), dst_node, 'Other') AS destination,\n    sum(traffic) AS traffic\nFROM labeled\nGROUP BY source, destination\nHAVING traffic > 0\nORDER BY traffic DESC\nLIMIT 300",
+          "query": "WITH\n    flows AS\n    (\n        SELECT\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n               IPv6NumToString(sampler_address)) AS exporter,\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n               IPv6NumToString(src_addr)) AS src_ip,\n            if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n               IPv6NumToString(dst_addr)) AS dst_ip,\n            ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) AS protocol,\n            concat(\n                ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n                '/',\n                toString(dst_port)\n            ) AS dst_service,\n            if(src_as = 0, 'AS0', concat('AS', toString(src_as))) AS src_asn,\n            if(dst_as = 0, 'AS0', concat('AS', toString(dst_as))) AS dst_asn,\n            bytes * if(sampling_rate = 0, 1, sampling_rate) AS traffic\n        FROM $table\n        WHERE $timeFilter\n          AND ('$exporter' = 'All' OR if(etype = 2048,\n               IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n               IPv6NumToString(sampler_address)) = '$exporter')\n          AND ('$protocol' = 'All' OR ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) = '$protocol')\n          AND ('$dst_port' = 'All' OR toString(dst_port) = '$dst_port')\n          AND (\n                '$src_net' = ''\n             OR (\n                    etype = 2048\n                AND isIPAddressInRange(\n                        IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n                        '$src_net'\n                    )\n                )\n          )\n          AND (\n                '$dst_net' = ''\n             OR (\n                    etype = 2048\n                AND isIPAddressInRange(\n                        IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n                        '$dst_net'\n                    )\n                )\n          )\n    ),\n    labeled AS\n    (\n        SELECT\n            multiIf(\n                '$dimension' = 'exp_dst', exporter,\n                '$dimension' = 'src_port', src_ip,\n                '$dimension' = 'proto_port', protocol,\n                '$dimension' = 'exp_src', exporter,\n                '$dimension' = 'src_as_dst', src_asn,\n                src_ip\n            ) AS src_node,\n            multiIf(\n                '$dimension' = 'exp_dst', dst_ip,\n                '$dimension' = 'src_port', dst_service,\n                '$dimension' = 'proto_port', dst_service,\n                '$dimension' = 'exp_src', src_ip,\n                '$dimension' = 'src_as_dst', dst_asn,\n                dst_ip\n            ) AS dst_node,\n            traffic\n        FROM flows\n    ),\n    top_src AS\n    (\n        SELECT src_node\n        FROM labeled\n        GROUP BY src_node\n        ORDER BY sum(traffic) DESC\n        LIMIT toUInt64OrZero('$topn')\n    ),\n    top_dst AS\n    (\n        SELECT dst_node\n        FROM labeled\n        GROUP BY dst_node\n        ORDER BY sum(traffic) DESC\n        LIMIT toUInt64OrZero('$topn')\n    )\nSELECT\n    if(src_node IN (SELECT src_node FROM top_src), src_node, 'Other') AS source,\n    if(dst_node IN (SELECT dst_node FROM top_dst), dst_node, 'Other') AS destination,\n    sum(traffic) AS traffic\nFROM labeled\nGROUP BY source, destination\nHAVING traffic > 0\nORDER BY traffic DESC\nLIMIT 300",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -297,7 +297,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) AS exporter,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n       IPv6NumToString(src_addr)) AS source,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n       IPv6NumToString(dst_addr)) AS destination,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    dst_port,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND ('$exporter' = 'All' OR if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) = '$exporter')\n  AND ('$protocol' = 'All' OR ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) = '$protocol')\n  AND ('$dst_port' = 'All' OR toString(dst_port) = '$dst_port')\n  AND (\n        '$src_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '$src_net'))\n  )\n  AND (\n        '$dst_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '$dst_net'))\n  )\nGROUP BY exporter, source, destination, protocol, dst_port\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$detail_rows')",
+          "query": "SELECT\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) AS exporter,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))),\n       IPv6NumToString(src_addr)) AS source,\n    if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))),\n       IPv6NumToString(dst_addr)) AS destination,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    dst_port,\n    src_as,\n    dst_as,\n    sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic,\n    count() AS flows\nFROM $table\nWHERE $timeFilter\n  AND ('$exporter' = 'All' OR if(etype = 2048,\n       IPv4NumToString(reinterpretAsUInt32(substring(reverse(sampler_address), 13, 4))),\n       IPv6NumToString(sampler_address)) = '$exporter')\n  AND ('$protocol' = 'All' OR ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('proto-', toString(proto))) = '$protocol')\n  AND ('$dst_port' = 'All' OR toString(dst_port) = '$dst_port')\n  AND (\n        '$src_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(src_addr), 13, 4))), '$src_net'))\n  )\n  AND (\n        '$dst_net' = ''\n     OR (etype = 2048 AND isIPAddressInRange(\n            IPv4NumToString(reinterpretAsUInt32(substring(reverse(dst_addr), 13, 4))), '$dst_net'))\n  )\nGROUP BY exporter, source, destination, protocol, dst_port, src_as, dst_as\nORDER BY traffic DESC\nLIMIT toUInt64OrZero('$detail_rows')",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -319,7 +319,7 @@
       {
         "current": {
           "selected": true,
-          "text": "SrcIP → DstIP",
+          "text": "SrcIP \u2192 DstIP",
           "value": "src_dst"
         },
         "hide": 0,
@@ -330,31 +330,36 @@
         "options": [
           {
             "selected": true,
-            "text": "SrcIP → DstIP",
+            "text": "SrcIP \u2192 DstIP",
             "value": "src_dst"
           },
           {
             "selected": false,
-            "text": "Exporter → DstIP",
+            "text": "Exporter \u2192 DstIP",
             "value": "exp_dst"
           },
           {
             "selected": false,
-            "text": "Exporter → SrcIP",
+            "text": "Exporter \u2192 SrcIP",
             "value": "exp_src"
           },
           {
             "selected": false,
-            "text": "SrcIP → DstPort",
+            "text": "SrcIP \u2192 DstPort",
             "value": "src_port"
           },
           {
             "selected": false,
-            "text": "Proto → DstPort",
+            "text": "Proto \u2192 DstPort",
             "value": "proto_port"
+          },
+          {
+            "selected": false,
+            "text": "SrcAS \u2192 DstAS",
+            "value": "src_as_dst"
           }
         ],
-        "query": "SrcIP → DstIP : src_dst,Exporter → DstIP : exp_dst,Exporter → SrcIP : exp_src,SrcIP → DstPort : src_port,Proto → DstPort : proto_port",
+        "query": "SrcIP \u2192 DstIP : src_dst,Exporter \u2192 DstIP : exp_dst,Exporter \u2192 SrcIP : exp_src,SrcIP \u2192 DstPort : src_port,Proto \u2192 DstPort : proto_port,SrcAS \u2192 DstAS : src_as_dst",
         "skipUrlSync": false,
         "type": "custom"
       },
@@ -512,7 +517,7 @@
   "timezone": "browser",
   "title": "Traffic Sankey",
   "uid": "flow-sankey",
-  "version": 9,
+  "version": 10,
   "weekStart": "",
   "liveNow": false
 }

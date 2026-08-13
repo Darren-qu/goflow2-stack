@@ -12,6 +12,7 @@
 #   INSTALL_DIR  default: $HOME/goflow2-stack
 #   WITH_DOCKER  set to 1 to attempt Docker Engine install on Debian/Ubuntu
 #   WITH_GEOIP   set to 1 to load GeoIP after stack is up
+#   WITH_ASN     set to 1 to load IP→ASN enrichment after stack is up
 
 set -euo pipefail
 
@@ -20,6 +21,7 @@ BRANCH="${BRANCH:-main}"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/goflow2-stack}"
 WITH_DOCKER="${WITH_DOCKER:-0}"
 WITH_GEOIP="${WITH_GEOIP:-0}"
+WITH_ASN="${WITH_ASN:-0}"
 
 log() { printf '[install] %s\n' "$*"; }
 die() { printf '[install] ERROR: %s\n' "$*" >&2; exit 1; }
@@ -53,10 +55,11 @@ else
 fi
 
 cd "${INSTALL_DIR}"
-chmod +x deploy.sh install.sh clickhouse/setup_geoip.sh 2>/dev/null || true
+chmod +x deploy.sh install.sh clickhouse/setup_geoip.sh clickhouse/setup_asn.sh 2>/dev/null || true
 
 ARGS=()
 [[ "${WITH_GEOIP}" == "1" ]] && ARGS+=(--geoip)
+[[ "${WITH_ASN}" == "1" ]] && ARGS+=(--asn)
 
 log "running deploy.sh ${ARGS[*]:-}"
 exec ./deploy.sh "${ARGS[@]}"
