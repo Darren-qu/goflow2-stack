@@ -267,6 +267,24 @@ Kafka at 48h is usually small next to ClickHouse if CH keeps up.
 
 **Lab sizing reminder:** 2–4 CPU / 8 GB RAM / SSD ≥ 40 GB to start; keep Kafka/CH off busy application disks.
 
+### Scaling ingestion
+
+The `flows` Kafka topic is auto-created with **`KAFKA_NUM_PARTITIONS`** partitions (default **3**, `.env`), and ClickHouse consumes it with **`CH_KAFKA_NUM_CONSUMERS`** parallel consumers (default **3**, `.env`). Partition count is the hard ceiling on consumer parallelism — more consumers than partitions just sit idle.
+
+> Both only take effect on a **fresh** topic / fresh ClickHouse volume. On an existing install:
+>
+> ```bash
+> # 1) repartition the existing topic (partitions can only go up, never down)
+> docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
+>   --bootstrap-server localhost:9092 --alter --topic flows --partitions 6
+>
+> # 2) bump CH_KAFKA_NUM_CONSUMERS in .env, then recreate the Kafka engine table
+> #    (safe: `flows` holds no data itself, ClickHouse just re-reads from Kafka)
+> docker compose exec -e CH_KAFKA_NUM_CONSUMERS db clickhouse-client \
+>   --password "${CLICKHOUSE_PASSWORD:-flow}" -q "DROP TABLE flows"
+> docker compose up -d --force-recreate db
+> ```
+
 ---
 
 ## Operations
