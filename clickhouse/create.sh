@@ -25,6 +25,32 @@ clickhouse client -n <<-EOSQL
     SOURCE (FILE(path '/var/lib/clickhouse/user_files/services.csv' format 'CSVWithNames'))
     LIFETIME(3600);
 
+    -- Shared helpers for Grafana dashboard queries (grafana/dashboards/*.json).
+    -- Defined once here instead of inlined in every panel query.
+    CREATE FUNCTION IF NOT EXISTS ipToStr AS (addr, et) ->
+        if(et = 2048,
+           IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))),
+           IPv6NumToString(addr));
+
+    -- RFC1918 + CGNAT (100.64/10): used to classify East-West vs North-South traffic.
+    CREATE FUNCTION IF NOT EXISTS isRfc1918OrCgnat AS (addr) -> (
+        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '10.0.0.0/8')
+        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '172.16.0.0/12')
+        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '192.168.0.0/16')
+        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '100.64.0.0/10')
+    );
+
+    -- Superset of isRfc1918OrCgnat (adds loopback + link-local): used by the Geo Map
+    -- to exclude everything that isn't a public, mappable address.
+    CREATE FUNCTION IF NOT EXISTS isNonRoutable AS (addr) -> (
+        isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '10.0.0.0/8')
+        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '172.16.0.0/12')
+        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '192.168.0.0/16')
+        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '127.0.0.0/8')
+        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '169.254.0.0/16')
+        OR isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '100.64.0.0/10')
+    );
+
     CREATE TABLE IF NOT EXISTS flows
     (
         time_received_ns UInt64,
