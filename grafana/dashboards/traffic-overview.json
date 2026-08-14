@@ -66,7 +66,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 5,
         "x": 0,
         "y": 0
       },
@@ -81,7 +81,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -90,7 +90,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "time_series",
-          "query": "SELECT t, sum(v) AS v\nFROM (\n  SELECT $timeSeries AS t, sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS v\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS v\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
+          "query": "SELECT t, sum(bytes_total) AS bytes_total\nFROM (\n  SELECT $timeSeries AS t, sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS bytes_total\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS bytes_total\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -120,8 +120,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 5,
+        "x": 5,
         "y": 0
       },
       "id": 2,
@@ -135,7 +135,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -144,7 +144,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "time_series",
-          "query": "SELECT t, sum(v) AS v\nFROM (\n  SELECT $timeSeries AS t, sum(packets * if(sampling_rate = 0, 1, sampling_rate)) AS v\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS v\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
+          "query": "SELECT t, sum(packets_total) AS packets_total\nFROM (\n  SELECT $timeSeries AS t, sum(packets * if(sampling_rate = 0, 1, sampling_rate)) AS packets_total\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS packets_total\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -174,8 +174,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 12,
+        "w": 5,
+        "x": 10,
         "y": 0
       },
       "id": 3,
@@ -189,7 +189,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -198,7 +198,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "time_series",
-          "query": "SELECT t, sum(v) AS v\nFROM (\n  SELECT $timeSeries AS t, count() AS v\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS v\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
+          "query": "SELECT t, sum(flow_count) AS flow_count\nFROM (\n  SELECT $timeSeries AS t, count() AS flow_count\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS flow_count\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -228,8 +228,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 18,
+        "w": 5,
+        "x": 15,
         "y": 0
       },
       "id": 4,
@@ -243,7 +243,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "targets": [
         {
@@ -960,9 +960,9 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 34
+        "w": 4,
+        "x": 20,
+        "y": 0
       },
       "id": 60,
       "options": {
