@@ -402,7 +402,7 @@
         "hide": 0
       },
       {
-        "allValue": "All",
+        "allValue": "'All'",
         "current": {
           "selected": true,
           "text": "All",
@@ -424,7 +424,7 @@
         "type": "query"
       },
       {
-        "allValue": "All",
+        "allValue": "'All'",
         "current": {
           "selected": true,
           "text": "All",
@@ -446,7 +446,7 @@
         "type": "query"
       },
       {
-        "allValue": "All",
+        "allValue": "'All'",
         "current": {
           "selected": true,
           "text": "All",
