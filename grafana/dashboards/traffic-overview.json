@@ -90,7 +90,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "time_series",
-          "query": "SELECT t, sum(bytes_total) AS bytes_total\nFROM (\n  SELECT $timeSeries AS t, sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS bytes_total\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS bytes_total\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
+          "query": "SELECT t, sum(bytes_total) AS bytes_total\nFROM (\n  SELECT $timeSeries AS t, sum(bytes_norm) AS bytes_total\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS bytes_total\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -144,7 +144,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "time_series",
-          "query": "SELECT t, sum(packets_total) AS packets_total\nFROM (\n  SELECT $timeSeries AS t, sum(packets * if(sampling_rate = 0, 1, sampling_rate)) AS packets_total\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS packets_total\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
+          "query": "SELECT t, sum(packets_total) AS packets_total\nFROM (\n  SELECT $timeSeries AS t, sum(packets_norm) AS packets_total\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS packets_total\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -309,7 +309,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "time_series",
-          "query": "SELECT t, sum(sumbytes) AS sumbytes\nFROM (\n  SELECT $timeSeries AS t, sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) * 8 / $interval AS sumbytes\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS sumbytes\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
+          "query": "SELECT t, sum(sumbytes) AS sumbytes\nFROM (\n  SELECT $timeSeries AS t, sum(bytes_norm) * 8 / $interval AS sumbytes\n  FROM $table\n  WHERE $timeFilter\n    AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  GROUP BY t\n  UNION ALL\n  SELECT toInt64(intDiv($from + number * $interval, $interval) * $interval * 1000) AS t, 0 AS sumbytes\n  FROM numbers(intDiv($to - $from, $interval))\n)\nGROUP BY t ORDER BY t",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -367,7 +367,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  multiIf(\n    proto = 6, 'TCP',\n    proto = 17, 'UDP',\n    proto = 1, 'ICMP',\n    proto = 58, 'ICMPv6',\n    proto = 47, 'GRE',\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))\n  ) AS protocol,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\nGROUP BY protocol\nORDER BY traffic DESC",
+          "query": "SELECT\n  multiIf(\n    proto = 6, 'TCP',\n    proto = 17, 'UDP',\n    proto = 1, 'ICMP',\n    proto = 58, 'ICMPv6',\n    proto = 47, 'GRE',\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))\n  ) AS protocol,\n  sum(bytes_norm) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\nGROUP BY protocol\nORDER BY traffic DESC",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -471,7 +471,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  ipToStr(src_addr, etype) AS src_ip,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND (${scope:singlequote} = 'all' OR isRfc1918OrCgnat(src_addr))\nGROUP BY src_ip\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
+          "query": "SELECT\n  ipToStr(src_addr, etype) AS src_ip,\n  sum(bytes_norm) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND (${scope:singlequote} = 'all' OR isRfc1918OrCgnat(src_addr))\nGROUP BY src_ip\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -575,7 +575,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  ipToStr(dst_addr, etype) AS dst_ip,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND (${scope:singlequote} = 'all'\n    OR (${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(dst_addr))\n    OR (${scope:singlequote} = 'ns' AND NOT isRfc1918OrCgnat(dst_addr)))\nGROUP BY dst_ip\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
+          "query": "SELECT\n  ipToStr(dst_addr, etype) AS dst_ip,\n  sum(bytes_norm) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND (${scope:singlequote} = 'all'\n    OR (${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(dst_addr))\n    OR (${scope:singlequote} = 'ns' AND NOT isRfc1918OrCgnat(dst_addr)))\nGROUP BY dst_ip\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -663,7 +663,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  concat(\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n    '/',\n    multiIf(\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n      dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n      src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n      concat('port-', toString(if(dst_port > 0, dst_port, src_port)))\n    )\n  ) AS service,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\nGROUP BY service\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
+          "query": "SELECT\n  concat(\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n    '/',\n    multiIf(\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n      nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n      dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n      src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n      concat('port-', toString(if(dst_port > 0, dst_port, src_port)))\n    )\n  ) AS service,\n  sum(bytes_norm) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\nGROUP BY service\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -722,7 +722,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  if(\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') = '',\n    concat('port-', toString(dst_port)),\n    dictGetString('dictionaries.services', 'name', toUInt64(dst_port))\n  ) AS application,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\nGROUP BY application\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
+          "query": "SELECT\n  if(\n    nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') = '',\n    concat('port-', toString(dst_port)),\n    dictGetString('dictionaries.services', 'name', toUInt64(dst_port))\n  ) AS application,\n  sum(bytes_norm) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\nGROUP BY application\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -832,7 +832,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  if(src_as = 0, 'AS0 / private', concat('AS', toString(src_as))) AS src_asn,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND src_as != 0\nGROUP BY src_as\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
+          "query": "SELECT\n  if(src_as = 0, 'AS0 / private', concat('AS', toString(src_as))) AS src_asn,\n  sum(bytes_norm) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND src_as != 0\nGROUP BY src_as\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -921,7 +921,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "SELECT\n  if(dst_as = 0, 'AS0 / private', concat('AS', toString(dst_as))) AS dst_asn,\n  sum(bytes * if(sampling_rate = 0, 1, sampling_rate)) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND dst_as != 0\nGROUP BY dst_as\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
+          "query": "SELECT\n  if(dst_as = 0, 'AS0 / private', concat('AS', toString(dst_as))) AS dst_asn,\n  sum(bytes_norm) AS traffic\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND dst_as != 0\nGROUP BY dst_as\nORDER BY traffic DESC\nLIMIT toUInt64OrZero(${topn:singlequote})",
           "refId": "A",
           "table": "flows_raw"
         }

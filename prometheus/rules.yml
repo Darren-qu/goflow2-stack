@@ -1,0 +1,38 @@
+groups:
+  - name: goflow2-stack
+    rules:
+      # Caught us on 2026-08-20: disk filled up over several days with nothing
+      # watching it. ClickHouse's own view of the disk it writes to (same
+      # filesystem as everything else in this compose stack).
+      - alert: DiskSpaceLow
+        expr: >
+          100 * ClickHouseAsyncMetrics_DiskAvailable_default
+          / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default)
+          < 20
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk free space below 20% on the goflow2-stack host"
+
+      # Also from 2026-08-20: the ClickHouse Kafka engine consumer can stop
+      # consuming (e.g. a corrupt offset commit) while the container, port,
+      # and healthcheck all stay green. Nothing else here would have caught
+      # that a Grafana viewer just sees a flat dashboard until someone looks.
+      - alert: ClickHouseKafkaConsumptionStalled
+        expr: rate(ClickHouseProfileEvents_KafkaMessagesRead[10m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ClickHouse has not read a Kafka message in 10+ minutes"
+
+      # Catches an exporter/device going silent, independent of the above —
+      # goflow2 itself is still up but nothing is arriving on 2055/6343.
+      - alert: GoflowCollectionStopped
+        expr: rate(goflow2_flow_traffic_packets_total[5m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "goflow2 has not received any flow packets in 10+ minutes"
