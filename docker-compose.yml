@@ -91,7 +91,13 @@ services:
       - ./clickhouse/flow.proto:/var/lib/clickhouse/format_schemas/flow.proto:ro
       - ./clickhouse/protocols.csv:/var/lib/clickhouse/user_files/protocols.csv:ro
       - ./clickhouse/services.csv:/var/lib/clickhouse/user_files/services.csv:ro
+      - ./clickhouse/config.d/logger.xml:/etc/clickhouse-server/config.d/logger.xml:ro
       - ch_data:/var/lib/clickhouse
+      # The base image defaults to trace-level logging with no volume for its own
+      # log dir, so the logs live in the container's writable layer — this filled
+      # the host disk once already. Put them on a volume so they're visible to
+      # `docker system df` and survive container recreation.
+      - ch_logs:/var/log/clickhouse-server
     depends_on:
       kafka:
         condition: service_healthy
@@ -162,5 +168,6 @@ services:
 
 volumes:
   ch_data:
+  ch_logs:
   grafana_data:
   kafka_data:
