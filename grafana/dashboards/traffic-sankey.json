@@ -42,17 +42,6 @@
       "title": "IP Lookup",
       "type": "link",
       "url": "/d/flow-ip-lookup"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Geo Map",
-      "type": "link",
-      "url": "/d/flow-geo-map"
     }
   ],
   "panels": [

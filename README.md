@@ -89,7 +89,6 @@ UI: `http://<host-ip>:3030` (see `GRAFANA_ADMIN_*` in `.env`; default `admin`/`a
 | **Traffic Overview** | `/d/flow-traffic-overview` | Totals, bps trend, L4/app pies, Top sources/destinations/services/**AS**; Direction = All / East-West / North-South; **Top N** default 8 |
 | **IP Flow Lookup** | `/d/flow-ip-lookup` | Single IP: inbound/outbound, inferred apps, Flow summary; Role = Any / Outbound / Inbound |
 | **Traffic Sankey** | `/d/flow-sankey` | Dimension + exporter/protocol/port/CIDR filters; Top N / Detail rows default 8 |
-| **Traffic Geo Map** | `/d/flow-geo-map` | Public IP map (starts at **world** view); Map IP = Destination / Source; Top N default 8 |
 | `viz-ch` / `perfs` | — | Upstream GoFlow2 samples |
 
 **Units:** table/stat totals in **bytes**; trend panels in **bps** (`sum(bytes)*8/$interval`).
