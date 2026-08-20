@@ -29,6 +29,12 @@ services:
       # If you change these, recreate kafka+goflow2+db together (not kafka alone).
       KAFKA_LOG_RETENTION_HOURS: "${KAFKA_LOG_RETENTION_HOURS:-48}"
       KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: "300000"
+      # Write logs to the named volume below instead of the image's default
+      # /tmp/kafka-logs, which lives in the container's writable layer and
+      # isn't visible to `docker volume`/host disk monitoring.
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     restart: unless-stopped
     logging:
       driver: json-file
@@ -157,3 +163,4 @@ services:
 volumes:
   ch_data:
   grafana_data:
+  kafka_data:
