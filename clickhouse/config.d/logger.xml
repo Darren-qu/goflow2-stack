@@ -1,0 +1,9 @@
+<clickhouse>
+    <!-- Base image ships with <level>trace</level>, which is far too verbose for a
+         busy Kafka-consuming flows table: it logs every consumer poll ("Stalled.")
+         several times per second. That filled the host disk in under a day once
+         (log dir isn't on a volume — see the ch_logs mount in docker-compose.yml). -->
+    <logger>
+        <level>information</level>
+    </logger>
+</clickhouse>
