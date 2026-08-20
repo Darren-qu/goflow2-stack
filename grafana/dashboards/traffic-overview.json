@@ -21,17 +21,6 @@
     },
     {
       "asDropdown": false,
-      "icon": "external link",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Geo Map",
-      "type": "link",
-      "url": "/d/flow-geo-map"
-    },
-    {
-      "asDropdown": false,
       "icon": "search",
       "includeVars": false,
       "keepTime": true,

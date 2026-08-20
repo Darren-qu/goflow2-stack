@@ -29,17 +29,6 @@
       "title": "Sankey",
       "type": "link",
       "url": "/d/flow-sankey"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Geo Map",
-      "type": "link",
-      "url": "/d/flow-geo-map"
     }
   ],
   "liveNow": false,
