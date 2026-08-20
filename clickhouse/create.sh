@@ -107,7 +107,16 @@ clickhouse client -n <<-EOSQL
         dst_port UInt32,
 
         bytes UInt64,
-        packets UInt64
+        packets UInt64,
+
+        -- Normalized to real (unsampled) volume so dashboards can just sum() these
+        -- instead of repeating "bytes * if(sampling_rate = 0, 1, sampling_rate)" in
+        -- every panel query. sFlow reports per-sampled-packet bytes and needs the
+        -- multiply; NetFlow/IPFIX totals are typically already cumulative per flow.
+        -- sampling_rate=0 (device didn't report it) is treated as 1:1 — see the
+        -- "Unsampled Flows" dashboard panel for how often that happens.
+        bytes_norm UInt64 MATERIALIZED bytes * if(sampling_rate = 0, 1, sampling_rate),
+        packets_norm UInt64 MATERIALIZED packets * if(sampling_rate = 0, 1, sampling_rate)
     ) ENGINE = MergeTree()
     PARTITION BY date
     ORDER BY time_received_ns

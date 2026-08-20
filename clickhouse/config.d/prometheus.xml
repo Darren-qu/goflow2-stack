@@ -1,0 +1,13 @@
+<clickhouse>
+    <!-- Exposes disk usage (system.asynchronous_metrics) and Kafka consumption
+         counters (system.events) to Prometheus. Reachable inside the compose
+         network as db:9363 — not published to the host, so no new port on the
+         box and no extra container (no node_exporter needed). -->
+    <prometheus>
+        <endpoint>/metrics</endpoint>
+        <port>9363</port>
+        <metrics>true</metrics>
+        <events>true</events>
+        <asynchronous_metrics>true</asynchronous_metrics>
+    </prometheus>
+</clickhouse>
