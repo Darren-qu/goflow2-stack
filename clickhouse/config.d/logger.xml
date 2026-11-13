@@ -6,4 +6,11 @@
     <logger>
         <level>information</level>
     </logger>
+    <!-- Stack and memory-profiler samples in system.trace_log have no default
+         TTL and can exhaust disk space. Ordinary logger level does not control
+         this table. Disable collection; existing diagnostic data is preserved.
+         Restart ClickHouse to apply. Before re-enabling for troubleshooting,
+         configure a bounded retention policy. -->
+    <trace_log remove="1" />
+    <total_memory_profiler_step>0</total_memory_profiler_step>
 </clickhouse>
