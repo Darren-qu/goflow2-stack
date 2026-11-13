@@ -29,6 +29,17 @@
       "title": "IP Lookup",
       "type": "link",
       "url": "/d/flow-ip-lookup"
+    },
+    {
+      "asDropdown": false,
+      "icon": "search",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Connection Search",
+      "type": "link",
+      "url": "/d/flow-connection-search"
     }
   ],
   "liveNow": false,
@@ -409,6 +420,11 @@
                     "title": "Open IP Lookup",
                     "url": "/d/flow-ip-lookup?var-ip=${__value.text}&var-role=any&from=${__from}&to=${__to}",
                     "targetBlank": true
+                  },
+                  {
+                    "title": "Search connections from this IP",
+                    "url": "/d/flow-connection-search?var-src=${__value.text}&from=${__from}&to=${__to}",
+                    "targetBlank": true
                   }
                 ]
               }
@@ -512,6 +528,11 @@
                   {
                     "title": "Open IP Lookup",
                     "url": "/d/flow-ip-lookup?var-ip=${__value.text}&var-role=any&from=${__from}&to=${__to}",
+                    "targetBlank": true
+                  },
+                  {
+                    "title": "Search connections to this IP",
+                    "url": "/d/flow-connection-search?var-dst=${__value.text}&from=${__from}&to=${__to}",
                     "targetBlank": true
                   }
                 ]
