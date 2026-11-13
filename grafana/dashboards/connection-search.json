@@ -7,16 +7,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
-  "links": [
-    {
-      "title": "IP Flow Lookup (advanced)",
-      "type": "link",
-      "url": "/d/flow-ip-lookup",
-      "icon": "external link",
-      "targetBlank": false,
-      "keepTime": true
-    }
-  ],
+  "links": [],
   "liveNow": false,
   "panels": [
     {
@@ -24,7 +15,7 @@
       "type": "stat",
       "title": "Connections found",
       "datasource": "ClickHouse",
-      "description": "How many connections match your search. The list shows at most the newest 50,000 - if this number is higher, narrow the time range. No result does not prove there was no connection (devices only sample traffic).",
+      "description": "How many connections match your search. The list below shows as many as you pick in 'Show' at the top; pick 'All rows' to see every one. No result does not prove there was no connection (devices only sample traffic).",
       "gridPos": {
         "h": 8,
         "w": 5,
@@ -44,10 +35,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "orange",
-                "value": 50001
               }
             ]
           }
@@ -256,9 +243,9 @@
     {
       "id": 4,
       "type": "table",
-      "title": "Every connection (newest first, up to 50,000)",
+      "title": "Every connection (newest first, ${limit:text})",
       "datasource": "ClickHouse",
-      "description": "Each row is one connection. Time = when the connection started, as reported by the network device. If 'Connections found' is above 50,000, older ones are not listed - narrow the time range. To save the list: panel menu > Inspect > Data > Download CSV.",
+      "description": "Each row is one connection. Time = when the connection started, as reported by the network device. How many rows are listed is set by 'Show' at the top; compare with 'Connections found' to see whether older ones are left out. 'All rows' on a long time range can be slow. To save the list: panel menu > Inspect > Data > Download CSV.",
       "gridPos": {
         "h": 16,
         "w": 24,
@@ -399,7 +386,7 @@
           "dateTimeColDataType": "time_received_ns",
           "dateTimeType": "DATETIME64",
           "format": "table",
-          "query": "WITH\n    trimBoth(${src:singlequote}) AS want_src,\n    trimBoth(${dst:singlequote}) AS want_dst,\n    trimBoth(${port:singlequote}) AS want_port,\n    (isIPv4String(want_src) OR isIPv6String(want_src)) AS src_is_ip,\n    (length(splitByChar('/', want_src)) = 2 AND (isIPv4String(splitByChar('/', want_src)[1]) OR isIPv6String(splitByChar('/', want_src)[1])) AND match(splitByChar('/', want_src)[2], '^[0-9]{1,3}$') AND toUInt16OrZero(splitByChar('/', want_src)[2]) <= if(isIPv4String(splitByChar('/', want_src)[1]), 32, 128)) AS src_is_net,\n    (isIPv4String(want_dst) OR isIPv6String(want_dst)) AS dst_is_ip,\n    (length(splitByChar('/', want_dst)) = 2 AND (isIPv4String(splitByChar('/', want_dst)[1]) OR isIPv6String(splitByChar('/', want_dst)[1])) AND match(splitByChar('/', want_dst)[2], '^[0-9]{1,3}$') AND toUInt16OrZero(splitByChar('/', want_dst)[2]) <= if(isIPv4String(splitByChar('/', want_dst)[1]), 32, 128)) AS dst_is_net,\n    (want_src != '' OR want_dst != '')\n      AND (want_src = '' OR src_is_ip OR src_is_net)\n      AND (want_dst = '' OR dst_is_ip OR dst_is_net)\n      AND (want_port = '' OR match(want_port, '^[0-9]{1,5}$')) AS inputs_ok\nSELECT\n    toUnixTimestamp64Milli(if(time_flow_start_ns < toDateTime64('2001-01-01 00:00:00', 9), time_received_ns, time_flow_start_ns)) AS time,\n    ipToStr(src_addr, etype) AS from_ip,\n    ipToStr(dst_addr, etype) AS to_ip,\n    dst_port AS to_port,\n    ifNull(nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), ''), '-') AS application,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    bytes_norm AS data_size\nFROM $table\nWHERE $timeFilter\n  AND inputs_ok\n  AND (want_src = '' OR if(src_is_net,\n        isIPAddressInRange(ipToStr(src_addr, etype), if(src_is_net, want_src, '0.0.0.0/32')),\n        ipToStr(src_addr, etype) = want_src))\n  AND (want_dst = '' OR if(dst_is_net,\n        isIPAddressInRange(ipToStr(dst_addr, etype), if(dst_is_net, want_dst, '0.0.0.0/32')),\n        ipToStr(dst_addr, etype) = want_dst))\n  AND (want_port = '' OR toString(dst_port) = want_port)\nORDER BY time_received_ns DESC\nLIMIT 50000",
+          "query": "WITH\n    trimBoth(${src:singlequote}) AS want_src,\n    trimBoth(${dst:singlequote}) AS want_dst,\n    trimBoth(${port:singlequote}) AS want_port,\n    (isIPv4String(want_src) OR isIPv6String(want_src)) AS src_is_ip,\n    (length(splitByChar('/', want_src)) = 2 AND (isIPv4String(splitByChar('/', want_src)[1]) OR isIPv6String(splitByChar('/', want_src)[1])) AND match(splitByChar('/', want_src)[2], '^[0-9]{1,3}$') AND toUInt16OrZero(splitByChar('/', want_src)[2]) <= if(isIPv4String(splitByChar('/', want_src)[1]), 32, 128)) AS src_is_net,\n    (isIPv4String(want_dst) OR isIPv6String(want_dst)) AS dst_is_ip,\n    (length(splitByChar('/', want_dst)) = 2 AND (isIPv4String(splitByChar('/', want_dst)[1]) OR isIPv6String(splitByChar('/', want_dst)[1])) AND match(splitByChar('/', want_dst)[2], '^[0-9]{1,3}$') AND toUInt16OrZero(splitByChar('/', want_dst)[2]) <= if(isIPv4String(splitByChar('/', want_dst)[1]), 32, 128)) AS dst_is_net,\n    (want_src != '' OR want_dst != '')\n      AND (want_src = '' OR src_is_ip OR src_is_net)\n      AND (want_dst = '' OR dst_is_ip OR dst_is_net)\n      AND (want_port = '' OR match(want_port, '^[0-9]{1,5}$')) AS inputs_ok\nSELECT\n    toUnixTimestamp64Milli(if(time_flow_start_ns < toDateTime64('2001-01-01 00:00:00', 9), time_received_ns, time_flow_start_ns)) AS time,\n    ipToStr(src_addr, etype) AS from_ip,\n    ipToStr(dst_addr, etype) AS to_ip,\n    dst_port AS to_port,\n    ifNull(nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), ''), '-') AS application,\n    ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)) AS protocol,\n    bytes_norm AS data_size\nFROM $table\nWHERE $timeFilter\n  AND inputs_ok\n  AND (want_src = '' OR if(src_is_net,\n        isIPAddressInRange(ipToStr(src_addr, etype), if(src_is_net, want_src, '0.0.0.0/32')),\n        ipToStr(src_addr, etype) = want_src))\n  AND (want_dst = '' OR if(dst_is_net,\n        isIPAddressInRange(ipToStr(dst_addr, etype), if(dst_is_net, want_dst, '0.0.0.0/32')),\n        ipToStr(dst_addr, etype) = want_dst))\n  AND (want_port = '' OR toString(dst_port) = want_port)\nORDER BY time_received_ns DESC\nLIMIT if(toUInt64OrZero(${limit:singlequote}) = 0, 18446744073709551615, toUInt64OrZero(${limit:singlequote}))",
           "refId": "A",
           "table": "flows_raw"
         }
@@ -507,6 +494,48 @@
             "value": ""
           }
         ],
+        "hide": 0
+      },
+      {
+        "name": "limit",
+        "type": "custom",
+        "label": "Show",
+        "description": "How many connections to list (newest first). 'All rows' lists every match - can be slow for long time ranges.",
+        "query": "100 rows : 100,200 rows : 200,500 rows : 500,1000 rows : 1000,All rows : 0",
+        "current": {
+          "selected": true,
+          "text": "100 rows",
+          "value": "100"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "100 rows",
+            "value": "100"
+          },
+          {
+            "selected": false,
+            "text": "200 rows",
+            "value": "200"
+          },
+          {
+            "selected": false,
+            "text": "500 rows",
+            "value": "500"
+          },
+          {
+            "selected": false,
+            "text": "1000 rows",
+            "value": "1000"
+          },
+          {
+            "selected": false,
+            "text": "All rows",
+            "value": "0"
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
         "hide": 0
       }
     ]
