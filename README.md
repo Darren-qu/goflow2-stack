@@ -417,3 +417,15 @@ docker compose down -v      # wipe ClickHouse / Grafana data
 
 - **Logstash** (or another NetFlow collector) on the same host: do not share UDP 2055/6343.
 - **Akvorado:** pick one stack; no need for two ClickHouse flow pipelines.
+
+---
+
+## License
+
+[BSD 3-Clause](LICENSE) — the same license as [netsampler/goflow2](https://github.com/netsampler/goflow2), whose `compose/kcg` example this stack is derived from (compose layout, ClickHouse schema, `flow.proto`, and the `viz-ch` / `perfs` dashboards). The upstream copyright notice is kept in `LICENSE`.
+
+Third-party data and components keep their own terms:
+
+- GeoIP data loaded by `--geoip`: DB-IP Lite, CC BY 4.0 (attribution required).
+- IP→ASN data loaded by `--asn`: via [sapics/ip-location-db](https://github.com/sapics/ip-location-db); see that project for the dataset license.
+- Container images (ClickHouse, Kafka, Grafana, Prometheus, …) are pulled from their publishers and are not redistributed here.
