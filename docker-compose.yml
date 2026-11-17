@@ -93,6 +93,7 @@ services:
       - ./clickhouse/services.csv:/var/lib/clickhouse/user_files/services.csv:ro
       - ./clickhouse/config.d/logger.xml:/etc/clickhouse-server/config.d/logger.xml:ro
       - ./clickhouse/config.d/prometheus.xml:/etc/clickhouse-server/config.d/prometheus.xml:ro
+      - ./clickhouse/config.d/system_logs.xml:/etc/clickhouse-server/config.d/system_logs.xml:ro
       - ch_data:/var/lib/clickhouse
       # The base image defaults to trace-level logging with no volume for its own
       # log dir, so the logs live in the container's writable layer — this filled
