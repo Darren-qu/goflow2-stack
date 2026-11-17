@@ -1,0 +1,22 @@
+# Console-only logging for the Kafka broker (see KAFKA_LOG4J_OPTS in
+# docker-compose.yml). Docker's json-file driver bounds the size.
+Configuration:
+  Properties:
+    Property:
+      - name: "logPattern"
+        value: "[%d] %p %m (%c)%n"
+  Appenders:
+    Console:
+      name: STDOUT
+      PatternLayout:
+        pattern: "${logPattern}"
+  Loggers:
+    Root:
+      level: INFO
+      AppenderRef:
+        - ref: STDOUT
+    Logger:
+      - name: kafka.request.logger
+        level: WARN
+      - name: state.change.logger
+        level: WARN

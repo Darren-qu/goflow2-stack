@@ -9,10 +9,17 @@
 [[servers]]
 # ldap://host:389  or  ldaps://host:636
 host = "ldap.example.com"
+# Connection security - pick one (details: grafana/LDAP.md):
+#   plain LDAP : port = 389, use_ssl = false, start_tls = false  (unencrypted)
+#   StartTLS   : port = 389, use_ssl = true,  start_tls = true
+#   LDAPS      : port = 636, use_ssl = true,  start_tls = false
 port = 389
 use_ssl = false
 start_tls = false
+# Encrypted modes only: true = do not verify the server certificate (testing)
 ssl_skip_verify = false
+# Encrypted modes with an internal CA: mount the CA file into the container
+# root_ca_cert = "/etc/grafana/ldap-ca.pem"
 
 # Read-only bind account (service account)
 bind_dn = "CN=svc-grafana,OU=Service,DC=example,DC=com"

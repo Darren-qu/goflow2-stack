@@ -1,0 +1,7 @@
+<clickhouse>
+    <!-- Default is 0.9 of host RAM. On a single host shared with Kafka, Grafana
+         and Prometheus that leaves no headroom: a large background merge can
+         push the box into swap or hit the limit and retry forever. Tune with
+         CH_MEMORY_RATIO in .env (raise it on a dedicated ClickHouse host). -->
+    <max_server_memory_usage_to_ram_ratio from_env="CH_MEMORY_RATIO" />
+</clickhouse>

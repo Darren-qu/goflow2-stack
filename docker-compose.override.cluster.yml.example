@@ -19,7 +19,7 @@
 services:
   # --- Keeper (coordination). Production often uses 3 nodes. ---
   ch-keeper-1:
-    image: clickhouse/clickhouse-keeper:25.11-alpine
+    image: clickhouse/clickhouse-keeper:26.8-alpine
     profiles: ["cluster-example"]
     restart: unless-stopped
     # volumes / keeper config omitted — see clickhouse/cluster/README.md
@@ -27,7 +27,7 @@ services:
   # --- Data nodes (names illustrate shard/replica layout) ---
   # shard1-replica1, shard1-replica2, shard2-replica1, shard2-replica2
   ch-s1r1:
-    image: clickhouse/clickhouse-server:25.11-alpine
+    image: clickhouse/clickhouse-server:26.8-alpine
     profiles: ["cluster-example"]
     depends_on: [ch-keeper-1]
     environment:
@@ -35,21 +35,21 @@ services:
     # profiles keep `docker compose up` from starting these by accident
 
   ch-s1r2:
-    image: clickhouse/clickhouse-server:25.11-alpine
+    image: clickhouse/clickhouse-server:26.8-alpine
     profiles: ["cluster-example"]
     depends_on: [ch-keeper-1]
     environment:
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-flow}
 
   ch-s2r1:
-    image: clickhouse/clickhouse-server:25.11-alpine
+    image: clickhouse/clickhouse-server:26.8-alpine
     profiles: ["cluster-example"]
     depends_on: [ch-keeper-1]
     environment:
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-flow}
 
   ch-s2r2:
-    image: clickhouse/clickhouse-server:25.11-alpine
+    image: clickhouse/clickhouse-server:26.8-alpine
     profiles: ["cluster-example"]
     depends_on: [ch-keeper-1]
     environment:

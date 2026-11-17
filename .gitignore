@@ -5,3 +5,9 @@
 
 # LDAP bind secrets — keep ldap.toml.example only in git
 grafana/ldap.toml
+
+# Alert receivers (SMTP credentials / webhook URLs) - keep the .example only
+alertmanager/alertmanager.yml
+
+# Local backup archives
+backups/

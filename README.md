@@ -10,7 +10,9 @@ Network devices (NetFlow/IPFIX :2055, sFlow :6343)
         │                                  │
    metrics :8080 (localhost)         Grafana :3030  ← UI
         │
-   Prometheus :9090 (localhost)
+   Prometheus :9090 (localhost) ──alerts──► Alertmanager :9093 (localhost)
+        ▲
+   node-exporter (host disk / memory)
 ```
 
 | Need | Suggestion |
@@ -18,7 +20,18 @@ Network devices (NetFlow/IPFIX :2055, sFlow :6343)
 | Turnkey UI, less ops | Prefer **Akvorado** |
 | Own the pipeline; plug into Grafana / LDAP | Use this stack |
 
-Defaults: Grafana **13.1.2**; ClickHouse raw flows **30 days**, 5‑minute aggregates **180 days**.
+Defaults: ClickHouse raw flows **30 days**, 5‑minute aggregates **180 days**.
+
+Pinned versions (all images and Grafana plugins are pinned to exact stable releases — see [Upgrading](#upgrading)):
+
+| Component | Version |
+|-----------|---------|
+| ClickHouse | 26.8 (LTS line) |
+| Kafka | 4.3.2 (KRaft) |
+| GoFlow2 | v2.2.7 |
+| Grafana | 13.1.10 |
+| Grafana plugins | `vertamedia-clickhouse-datasource` 3.5.0, `netsage-sankey-panel` 1.1.4 |
+| Prometheus / Alertmanager / node-exporter | v3.15.1 / v0.34.2 / v1.12.1 |
 
 ---
 
@@ -67,13 +80,17 @@ Wait ~30–60s for ClickHouse `clickhouse/create.sh` on first boot. The host mus
 | 8123 / 9000 | `127.0.0.1` | ClickHouse HTTP / native |
 | 8080 | `127.0.0.1` | GoFlow2 metrics |
 | 9090 | `127.0.0.1` | Prometheus |
+| 9093 | `127.0.0.1` | Alertmanager |
 
 Kafka is **not** published on the host.
 
 **Hardening defaults:**
 
 - Management ports bind to localhost only; secrets live in `.env` (gitignored; copy from `.env.example`).
-- Grafana anonymous auth is off; LDAP: [grafana/LDAP.md](grafana/LDAP.md).
+- Grafana anonymous auth is off; LDAP: [grafana/LDAP.md](grafana/LDAP.md) (plain LDAP, StartTLS or LDAPS — your choice).
+- Grafana queries ClickHouse as the read-only `grafana` user (`clickhouse/users.d/grafana.xml`, password `CLICKHOUSE_GRAFANA_PASSWORD`), not as the admin `default` user, so dashboard editors cannot alter or drop tables.
+- ClickHouse is capped at 60% of host RAM (`CH_MEMORY_RATIO`) because it shares the host with Kafka, Grafana and Prometheus.
+- The Grafana UI is plain HTTP; front it with a TLS reverse proxy if logins must be encrypted in transit.
 - Still firewall **3030** and UDP **2055/6343** to trusted networks.
 
 > Changing `CLICKHOUSE_PASSWORD` in `.env` does **not** update an existing `ch_data` volume (password is set only on first init).
@@ -126,7 +143,8 @@ Devices → GoFlow2 → Kafka (48h default) → ClickHouse
 | `flows_5m` | Longer trends | **180 days** | same |
 | GeoIP tables | Map coordinates | Keep | not TTL’d with flows |
 | ASN table / `asn_trie` | IP→AS enrichment | Keep | refresh via `./deploy.sh --asn` |
-| Grafana / Prometheus | UI / self-metrics | volumes | not flow TTL |
+| Grafana | UI state | volume | not flow TTL |
+| Prometheus | Self-metrics / alert history | **30 days** | `PROMETHEUS_RETENTION` |
 | ClickHouse `system.*_log` tables | Server diagnostics | **7 days** | TTL in `clickhouse/config.d/system_logs.xml` (`trace_log` is disabled in `logger.xml`) |
 
 **Why this split:** raw rows grow fastest (30d is enough for day‑to‑day ops; set `FLOWS_RAW_TTL_DAYS=90` if needed). Aggregates are cheap. `ttl_only_drop_parts=1` drops whole day parts when expired.
@@ -161,7 +179,69 @@ WHERE active AND table IN ('flows_raw','flows_5m')
 GROUP BY table"
 ```
 
-Expired parts are removed during background merges, not instantly when TTL changes. Monitor the Docker data disk on the host.
+Expired parts are removed during background merges, not instantly when TTL changes. Host disk is watched by the `HostDisk*` alerts (see [Alerting](#alerting)).
+
+> **Dashboards read `flows_raw` only.** `flows_5m` is populated (per AS number, 180 days) but no provisioned dashboard queries it yet, so dashboards show at most `FLOWS_RAW_TTL_DAYS` of history.
+
+---
+
+## Alerting
+
+Prometheus evaluates `prometheus/rules.yml` and sends firing alerts to Alertmanager.
+
+| Alert | Fires when |
+|-------|-----------|
+| `TargetDown` | Any component (ClickHouse, GoFlow2, node-exporter, Alertmanager) stops answering for 5 min |
+| `HostDiskLow` / `HostDiskCritical` | Host `/` has less than 25% / 10% free |
+| `HostDiskFillingFast` | At the current rate the disk fills within 3 days |
+| `ClickHouseKafkaConsumptionStalled` | ClickHouse reads nothing from Kafka for 10 min |
+| `ClickHouseMemoryLimitErrors` | ClickHouse keeps hitting its memory limit |
+| `GoflowCollectionStopped` | No flow packets from any exporter for 10 min |
+
+Disk is measured by node-exporter, not by ClickHouse, so the disk alerts keep working when a full disk has already taken ClickHouse down.
+
+**Alerts are only delivered once you add a receiver.** `deploy.sh` creates `alertmanager/alertmanager.yml` (local, gitignored) from the `.example`; it ships with an empty receiver. Uncomment the email or webhook block, then:
+
+```bash
+docker compose up -d --force-recreate alertmanager
+# send a test alert
+docker compose exec alertmanager amtool alert add TestAlert severity=warning \
+  --annotation=summary="test from goflow2-stack" --alertmanager.url=http://localhost:9093
+```
+
+Until then alerts are visible only at `http://127.0.0.1:9093` and `http://127.0.0.1:9090/alerts` (SSH tunnel).
+
+---
+
+## Backup & restore
+
+`scripts/backup.sh [target-dir]` archives what cannot be rebuilt from this repo: `.env`, `grafana/ldap.toml`, `alertmanager/alertmanager.yml` and Grafana's database (users, preferences, anything saved in the UI). It keeps the newest 14 archives (`KEEP=`). Point it at storage on another machine:
+
+```bash
+30 2 * * * cd $HOME/goflow2-stack && scripts/backup.sh /mnt/backup/goflow2 >> backups/backup.log 2>&1
+```
+
+Restore: unpack the archive, put the `config/` files back in place, and copy `grafana.db` into the stopped Grafana container (`docker compose cp grafana.db grafana:/var/lib/grafana/grafana.db`), then start it.
+
+Flow data is not backed up: it is a rolling window and normally much larger than everything else. If you need it, use ClickHouse `BACKUP TABLE flows_raw TO Disk(...)` or snapshot the `ch_data` volume.
+
+---
+
+## Upgrading
+
+Images and plugins are pinned on purpose. To upgrade, change the tag in `docker-compose.yml` (plugins: `GF_PLUGINS_PREINSTALL_SYNC`), then `./deploy.sh`.
+
+- **ClickHouse:** stay on LTS lines (`.3` / `.8`). Upgrade forwards only — an older version may not be able to read data written by a newer one.
+- **After a ClickHouse upgrade or any change to `clickhouse/config.d/system_logs.xml`:** ClickHouse renames the existing system log tables to `system.<name>_0`, `_1`, … and they are no longer cleaned up. Drop them:
+
+  ```bash
+  docker compose exec db clickhouse-client --password "${CLICKHOUSE_PASSWORD:-flow}" -q \
+    "SELECT name FROM system.tables WHERE database='system' AND match(name, '_log_[0-9]+\$')"
+  # then for each: DROP TABLE system.<name> SYNC
+  ```
+
+- **Kafka:** recreate `kafka`, `goflow2` and `db` together (`./deploy.sh` does). Kafka is only a buffer, so a failed Kafka upgrade can be fixed by removing the `kafka_data` volume at the cost of a few minutes of flows.
+- **Grafana:** test the dashboards after changing the Grafana or plugin version; the Sankey panel is an unsigned community plugin.
 
 ---
 
@@ -237,22 +317,30 @@ ClickHouse disk is driven by **flow record rate**, not by link Gbps. Sampling lo
 
 ### Ballpark formula
 
-Per raw row on disk (MergeTree overhead included), use roughly **200–300 bytes** (conservative). Then:
+With this schema (5-tuple, AS, counters) a raw row compresses to roughly **40–60 bytes** on disk; a production deployment measured ~38 B/row. Use 50 B/row for planning:
 
 ```text
 disk_raw_bytes ≈ fps × 86400 × FLOWS_RAW_TTL_DAYS × bytes_per_row_on_disk
-disk_5m_bytes  ≈ 0.05 … 0.15 × disk_raw_bytes   # often much smaller
+disk_5m_bytes  ≈ a few % of disk_raw_bytes
 disk_total     ≈ disk_raw + disk_5m + Kafka buffer + headroom (20–30%)
 ```
 
-Example with **250 B/row**, **30-day** raw TTL (`fps × 86400 × 30 × 250`):
+Example with **50 B/row**, **30-day** raw TTL (`fps × 86400 × 30 × 50`):
 
 | Sustained fps | Raw ≈ 30d | Notes |
 |---------------|-----------|--------|
-| 1 000 | ~**18 GB** | Small site / heavy sampling |
-| 5 000 | ~**90 GB** | Comfortable single SSD node |
-| 20 000 | ~**360 GB** | Watch disk & query load |
-| 50 000 | ~**900 GB** | Shorten TTL, sample more, or plan cluster |
+| 100 | ~**13 GB** | Small site / heavy sampling |
+| 1 000 | ~**130 GB** | Comfortable single SSD node |
+| 5 000 | ~**650 GB** | Watch disk & query load |
+| 20 000 | ~**2.6 TB** | Shorten TTL, sample more, or plan cluster |
+
+Check your own figures:
+
+```bash
+docker compose exec db clickhouse-client --password "${CLICKHOUSE_PASSWORD:-flow}" -q "
+SELECT round(sum(bytes_on_disk)/sum(rows)) AS bytes_per_row, round(sum(rows)/count(DISTINCT partition)/86400) AS avg_fps
+FROM system.parts WHERE active AND table = 'flows_raw'"
+```
 
 Kafka at 48h is usually small next to ClickHouse if CH keeps up.
 
@@ -266,7 +354,7 @@ Kafka at 48h is usually small next to ClickHouse if CH keeps up.
 **Before clustering:** raise sampling, add disk, or lower `FLOWS_RAW_TTL_DAYS`.  
 **Consider clustering when:** sustained high fps (ballpark **tens of thousands** records/sec), disk stays **> ~70%**, or you need multi-host HA. The example is **not** wired into `install.sh`.
 
-**Lab sizing reminder:** 2–4 CPU / 8 GB RAM / SSD ≥ 40 GB to start; keep Kafka/CH off busy application disks.
+**Lab sizing reminder:** 2–4 CPU / 8 GB RAM / SSD ≥ 40 GB to start; keep Kafka/CH off busy application disks. With 8 GB, ClickHouse gets ~4.7 GB (`CH_MEMORY_RATIO=0.6`).
 
 ### Scaling ingestion
 
@@ -306,7 +394,7 @@ docker compose down -v      # wipe ClickHouse / Grafana data
 |------|------|
 | `install.sh` | Clone/update then `deploy.sh` |
 | `deploy.sh` | `pull` + `up` (`--geoip` / `--asn` / `--no-pull`) |
-| `docker-compose.yml` | Stack (Grafana 13.1.2) |
+| `docker-compose.yml` | Stack (pinned image versions) |
 | `.env.example` | Password / port template |
 | `clickhouse/create.sh` | Kafka engine, `flows_raw`, 5m agg (+ default TTL) |
 | `clickhouse/apply_retention.sh` | Apply/refresh TTL on existing tables |
@@ -318,7 +406,12 @@ docker compose down -v      # wipe ClickHouse / Grafana data
 | `device-config/` | Vendor NetFlow / sFlow snippets (Huawei, Cisco, Arista, Juniper) |
 | `clickhouse/cluster/` | Notes for optional CH cluster sketch |
 | `docker-compose.override.cluster.yml.example` | Non-default Keeper + 2×2 service skeleton |
-| `prometheus/` | Scrapes GoFlow2 metrics |
+| `prometheus/` | Scrape config (GoFlow2, ClickHouse, node-exporter) + alert rules |
+| `alertmanager/alertmanager.yml.example` | Alert receiver template (copy to `alertmanager.yml`; do not commit secrets) |
+| `clickhouse/config.d/` | Server config: log level, system-log retention, memory cap, metrics endpoint |
+| `clickhouse/users.d/grafana.xml` | Read-only ClickHouse user for Grafana |
+| `kafka/log4j2-console.yaml` | Kafka logs to stdout only (no unbounded log files) |
+| `scripts/backup.sh` | Back up local config + Grafana database |
 
 **Coexistence:**
 
