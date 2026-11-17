@@ -1,0 +1,23 @@
+<clickhouse>
+    <!-- Read-only account for Grafana, so nobody with dashboard-edit rights can
+         alter or drop tables. readonly=2: SELECT only, but query-level settings
+         may still be sent (the Grafana plugin needs that). Password comes from
+         CLICKHOUSE_GRAFANA_PASSWORD in .env; unlike the default user it is read
+         on every start, so it can be changed later with a db restart. -->
+    <profiles>
+        <grafana_ro>
+            <readonly>2</readonly>
+            <max_execution_time>120</max_execution_time>
+        </grafana_ro>
+    </profiles>
+    <users>
+        <grafana>
+            <password from_env="CLICKHOUSE_GRAFANA_PASSWORD" />
+            <profile>grafana_ro</profile>
+            <quota>default</quota>
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+        </grafana>
+    </users>
+</clickhouse>

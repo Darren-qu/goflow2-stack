@@ -17,12 +17,12 @@ datasources:
    user: ''
    database: ''
    basicAuth: true
-   basicAuthUser: 'default'
+   basicAuthUser: 'grafana'
    secureJsonData:
      # Expanded from Grafana container env (see docker-compose.yml / .env)
-     basicAuthPassword: ${CLICKHOUSE_PASSWORD}
+     basicAuthPassword: ${CLICKHOUSE_GRAFANA_PASSWORD}
    withCredentials: false
    isDefault: true
    secureJsonFields: {}
-   version: 3
+   version: 4
    readOnly: false

@@ -1,0 +1,30 @@
+# Alert delivery. deploy.sh copies this to alertmanager.yml (local, gitignored)
+# on first run. Add at least one receiver below, then:
+#   docker compose up -d --force-recreate alertmanager
+#
+# Until a receiver is configured, alerts fire but are only visible in the
+# Alertmanager UI (http://127.0.0.1:9093) and Prometheus (http://127.0.0.1:9090/alerts).
+
+route:
+  receiver: default
+  group_by: ["alertname"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: default
+    # --- Option A: email -------------------------------------------------
+    # email_configs:
+    #   - to: "netops@example.com"
+    #     from: "goflow2-stack@example.com"
+    #     smarthost: "smtp.example.com:25"
+    #     require_tls: false            # true if the relay offers STARTTLS
+    #     # auth_username: "user"
+    #     # auth_password: "secret"
+    #     send_resolved: true
+    #
+    # --- Option B: generic webhook (chat bots, ticketing, automation) ------
+    # webhook_configs:
+    #   - url: "http://alert-relay.example.com:8080/alert"
+    #     send_resolved: true

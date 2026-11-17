@@ -1,0 +1,35 @@
+name: lint
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compose file is valid
+        run: |
+          cp .env.example .env
+          cp grafana/ldap.toml.example grafana/ldap.toml
+          cp alertmanager/alertmanager.yml.example alertmanager/alertmanager.yml
+          docker compose config -q
+
+      - name: Dashboards are valid JSON
+        run: |
+          for f in grafana/dashboards/*.json; do jq empty "$f"; done
+
+      - name: Shell scripts parse
+        run: |
+          for f in *.sh clickhouse/*.sh scripts/*.sh; do bash -n "$f"; done
+
+      - name: Prometheus config and rules
+        run: |
+          docker run --rm -v "$PWD/prometheus:/etc/prometheus:ro" --entrypoint promtool \
+            prom/prometheus:v3.15.1 check config /etc/prometheus/prometheus.yml
+
+      - name: Alertmanager example config
+        run: |
+          docker run --rm -v "$PWD/alertmanager:/cfg:ro" --entrypoint amtool \
+            prom/alertmanager:v0.34.2 check-config /cfg/alertmanager.yml.example

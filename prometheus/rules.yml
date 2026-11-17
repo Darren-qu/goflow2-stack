@@ -1,24 +1,52 @@
 groups:
   - name: goflow2-stack
     rules:
-      # Caught us on 2026-08-20: disk filled up over several days with nothing
-      # watching it. ClickHouse's own view of the disk it writes to (same
-      # filesystem as everything else in this compose stack).
-      - alert: DiskSpaceLow
+      # Any component Prometheus cannot scrape. This is the rule that fires when
+      # ClickHouse dies (e.g. from a full disk) - the rules further down that
+      # read ClickHouse's own metrics simply go silent in that case.
+      - alert: TargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} is down or not answering metrics scrapes"
+
+      # Host disk, measured by node-exporter so it keeps working while ClickHouse
+      # is down. The disk has filled twice (2026-08-20, 2026-10-27); the second
+      # time the ClickHouse-based disk metric disappeared together with ClickHouse.
+      - alert: HostDiskLow
         expr: >
-          100 * ClickHouseAsyncMetrics_DiskAvailable_default
-          / (ClickHouseAsyncMetrics_DiskAvailable_default + ClickHouseAsyncMetrics_DiskUsed_default)
-          < 20
+          100 * node_filesystem_avail_bytes{mountpoint="/"}
+          / node_filesystem_size_bytes{mountpoint="/"} < 25
         for: 10m
         labels:
           severity: warning
         annotations:
-          summary: "Disk free space below 20% on the goflow2-stack host"
+          summary: "Host disk free space is below 25%"
 
-      # Also from 2026-08-20: the ClickHouse Kafka engine consumer can stop
-      # consuming (e.g. a corrupt offset commit) while the container, port,
-      # and healthcheck all stay green. Nothing else here would have caught
-      # that a Grafana viewer just sees a flat dashboard until someone looks.
+      - alert: HostDiskCritical
+        expr: >
+          100 * node_filesystem_avail_bytes{mountpoint="/"}
+          / node_filesystem_size_bytes{mountpoint="/"} < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host disk free space is below 10% - ClickHouse will stop accepting data"
+
+      # At the current growth rate the disk is full within 3 days.
+      - alert: HostDiskFillingFast
+        expr: >
+          predict_linear(node_filesystem_avail_bytes{mountpoint="/"}[6h], 3 * 86400) < 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host disk is on course to fill within 3 days"
+
+      # The ClickHouse Kafka engine consumer can stop consuming (e.g. a corrupt
+      # offset commit) while the container, port, and healthcheck all stay green.
       - alert: ClickHouseKafkaConsumptionStalled
         expr: rate(ClickHouseProfileEvents_KafkaMessagesRead[10m]) == 0
         for: 10m
@@ -27,10 +55,20 @@ groups:
         annotations:
           summary: "ClickHouse has not read a Kafka message in 10+ minutes"
 
-      # Catches an exporter/device going silent, independent of the above —
-      # goflow2 itself is still up but nothing is arriving on 2055/6343.
+      # Background merges or queries hitting the server memory limit over and
+      # over (2026-11: a system-log merge retried ~500k times in three days).
+      - alert: ClickHouseMemoryLimitErrors
+        expr: increase(ClickHouseErrorMetric_MEMORY_LIMIT_EXCEEDED[15m]) > 20
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ClickHouse keeps hitting its memory limit (see system.errors)"
+
+      # All exporters silent - goflow2 itself is still up but nothing is arriving
+      # on 2055/6343.
       - alert: GoflowCollectionStopped
-        expr: rate(goflow2_flow_traffic_packets_total[5m]) == 0
+        expr: sum(rate(goflow2_flow_traffic_packets_total[5m])) == 0
         for: 10m
         labels:
           severity: warning

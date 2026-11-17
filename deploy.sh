@@ -72,6 +72,12 @@ if [[ ! -f grafana/ldap.toml ]]; then
   log "created grafana/ldap.toml from example (edit for AD/LDAP, then: ./deploy.sh --no-pull && recreate grafana)"
 fi
 
+# Alert receivers stay local too (SMTP credentials / webhook URLs)
+if [[ ! -f alertmanager/alertmanager.yml ]]; then
+  cp alertmanager/alertmanager.yml.example alertmanager/alertmanager.yml
+  log "created alertmanager/alertmanager.yml from example - add an email/webhook receiver to get notified"
+fi
+
 if [[ ! -f .env && -f .env.example ]]; then
   cp .env.example .env
   log "created .env from .env.example — edit passwords before production use"
