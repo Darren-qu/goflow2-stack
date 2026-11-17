@@ -127,6 +127,7 @@ Devices → GoFlow2 → Kafka (48h default) → ClickHouse
 | GeoIP tables | Map coordinates | Keep | not TTL’d with flows |
 | ASN table / `asn_trie` | IP→AS enrichment | Keep | refresh via `./deploy.sh --asn` |
 | Grafana / Prometheus | UI / self-metrics | volumes | not flow TTL |
+| ClickHouse `system.*_log` tables | Server diagnostics | **7 days** | TTL in `clickhouse/config.d/system_logs.xml` (`trace_log` is disabled in `logger.xml`) |
 
 **Why this split:** raw rows grow fastest (30d is enough for day‑to‑day ops; set `FLOWS_RAW_TTL_DAYS=90` if needed). Aggregates are cheap. `ttl_only_drop_parts=1` drops whole day parts when expired.
 
