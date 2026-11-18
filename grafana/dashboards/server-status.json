@@ -113,11 +113,11 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "100*ClickHouseAsyncMetrics_DiskAvailable_default/(ClickHouseAsyncMetrics_DiskAvailable_default+ClickHouseAsyncMetrics_DiskUsed_default)",
+          "expr": "100*node_filesystem_avail_bytes{mountpoint=\"/\"}/node_filesystem_size_bytes{mountpoint=\"/\"}",
           "refId": "A"
         }
       ],
-      "title": "Disk Free (matches DiskSpaceLow alert)",
+      "title": "Disk Free (matches HostDiskLow alert)",
       "type": "stat"
     },
     {
@@ -279,12 +279,18 @@
       "targets": [
         {
           "datasource": "Prometheus",
-          "expr": "100*ClickHouseAsyncMetrics_DiskAvailable_default/(ClickHouseAsyncMetrics_DiskAvailable_default+ClickHouseAsyncMetrics_DiskUsed_default)",
+          "expr": "100*node_filesystem_avail_bytes{mountpoint=\"/\"}/node_filesystem_size_bytes{mountpoint=\"/\"}",
           "legendFormat": "free",
           "refId": "A"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "100*(1-node_filesystem_avail_bytes{mountpoint=\"/\"}/node_filesystem_size_bytes{mountpoint=\"/\"})",
+          "legendFormat": "used",
+          "refId": "B"
         }
       ],
-      "title": "Disk Free",
+      "title": "Disk Free / Used",
       "type": "timeseries"
     },
     {
