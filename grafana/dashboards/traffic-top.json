@@ -1,0 +1,757 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Top N of the NetFlow traffic: pick what to rank (source, destination, conversation, service, protocol, exporter), optionally limited to a source / destination CIDR range. Rows are clickable. Top N default 8.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Traffic Overview",
+      "type": "link",
+      "url": "/d/flow-traffic-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "search",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "IP Lookup",
+      "type": "link",
+      "url": "/d/flow-ip-lookup"
+    }
+  ],
+  "liveNow": false,
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "netflow",
+    "top",
+    "goflow2"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "by",
+        "type": "custom",
+        "label": "Rank by",
+        "query": "Source IP : src,Destination IP : dst,Conversation (source to destination) : pair,Service : service,Protocol : proto,Exporter : exporter",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "skipUrlSync": false,
+        "options": [
+          {
+            "selected": true,
+            "text": "Source IP",
+            "value": "src"
+          },
+          {
+            "selected": false,
+            "text": "Destination IP",
+            "value": "dst"
+          },
+          {
+            "selected": false,
+            "text": "Conversation (source to destination)",
+            "value": "pair"
+          },
+          {
+            "selected": false,
+            "text": "Service",
+            "value": "service"
+          },
+          {
+            "selected": false,
+            "text": "Protocol",
+            "value": "proto"
+          },
+          {
+            "selected": false,
+            "text": "Exporter",
+            "value": "exporter"
+          }
+        ],
+        "current": {
+          "selected": true,
+          "text": "Source IP",
+          "value": "src"
+        }
+      },
+      {
+        "name": "topn",
+        "type": "textbox",
+        "label": "Top N",
+        "query": "8",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": "8",
+          "value": "8"
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "8",
+            "value": "8"
+          }
+        ]
+      },
+      {
+        "name": "src_net",
+        "type": "textbox",
+        "label": "Source CIDR",
+        "query": "",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ]
+      },
+      {
+        "name": "dst_net",
+        "type": "textbox",
+        "label": "Destination CIDR",
+        "query": "",
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        },
+        "options": [
+          {
+            "selected": true,
+            "text": "",
+            "value": ""
+          }
+        ]
+      },
+      {
+        "name": "scope",
+        "type": "custom",
+        "label": "Direction",
+        "query": "All : all,East-West (private) : ew,North-South (public) : ns",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "skipUrlSync": false,
+        "options": [
+          {
+            "selected": true,
+            "text": "All",
+            "value": "all"
+          },
+          {
+            "selected": false,
+            "text": "East-West (private)",
+            "value": "ew"
+          },
+          {
+            "selected": false,
+            "text": "North-South (public)",
+            "value": "ns"
+          }
+        ],
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "all"
+        }
+      },
+      {
+        "allValue": "'All'",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "All"
+        },
+        "datasource": "ClickHouse",
+        "definition": "SELECT DISTINCT ipToStr(sampler_address, etype) AS exporter FROM flows_raw WHERE date >= today() - 7 ORDER BY exporter",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Exporter",
+        "multi": false,
+        "name": "exporter",
+        "options": [],
+        "query": "SELECT DISTINCT ipToStr(sampler_address, etype) AS exporter FROM flows_raw WHERE date >= today() - 7 ORDER BY exporter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Traffic Top N",
+  "uid": "flow-top-n",
+  "version": 1,
+  "weekStart": "",
+  "panels": [
+    {
+      "datasource": "ClickHouse",
+      "description": "Data of the ranked items shown below (bytes, selected time range).",
+      "id": 1,
+      "title": "Top N traffic",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "decbytes",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT sum(traffic) AS top_traffic\nFROM (\n  SELECT item, traffic FROM (\n    SELECT multiIf(\n          ${by:singlequote} = 'src', ipToStr(src_addr, etype),\n          ${by:singlequote} = 'dst', ipToStr(dst_addr, etype),\n          ${by:singlequote} = 'pair', concat(ipToStr(src_addr, etype), ' → ', ipToStr(dst_addr, etype)),\n          ${by:singlequote} = 'service', concat(\n          ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n          '/',\n          multiIf(\n            nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n            nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n            dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n            src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n            concat('port-', toString(if(dst_port > 0, dst_port, src_port))))),\n          ${by:singlequote} = 'proto', multiIf(proto = 6, 'TCP', proto = 17, 'UDP', proto = 1, 'ICMP', proto = 58, 'ICMPv6', proto = 47, 'GRE',\n          ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))),\n          ${by:singlequote} = 'exporter', ipToStr(sampler_address, etype),\n          ipToStr(src_addr, etype)) AS item, sum(bytes_norm) AS traffic, sum(packets_norm) AS packets, count() AS flows,\n           any(concat(multiIf(\n          ${by:singlequote} = 'src', concat('/d/flow-ip-lookup?var-role=any&var-ip=', encodeURLComponent(ipToStr(src_addr, etype))),\n          ${by:singlequote} = 'dst', concat('/d/flow-ip-lookup?var-role=any&var-ip=', encodeURLComponent(ipToStr(dst_addr, etype))),\n          ${by:singlequote} = 'pair', concat('/d/flow-sankey?var-dimension=src_port&var-src_net=', encodeURLComponent(concat(ipToStr(src_addr, etype), if(etype = 2048, '/32', '/128'))),\n                                             '&var-dst_net=', encodeURLComponent(concat(ipToStr(dst_addr, etype), if(etype = 2048, '/32', '/128')))),\n          ${by:singlequote} = 'exporter', concat('/d/flow-traffic-overview?var-exporter=', encodeURLComponent(ipToStr(sampler_address, etype))),\n          '#'),\n        if(${by:singlequote} IN ('src', 'dst', 'pair', 'exporter'), concat('&from=', toString($from * 1000), '&to=', toString($to * 1000)), ''))) AS link_url\n    FROM $table\n    WHERE $timeFilter\n      AND (\n        ${scope:singlequote} = 'all'\n        OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n        OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n      )\n      AND (${exporter:singlequote} = 'All' OR ipToStr(sampler_address, etype) = ${exporter:singlequote})\n      AND (${src_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${src_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n          AND arrayExists(c -> isIPAddressInRange(ipToStr(src_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', '')))))))\n      AND (${dst_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${dst_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n          AND arrayExists(c -> isIPAddressInRange(ipToStr(dst_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', '')))))))\n    GROUP BY item\n  ) ORDER BY traffic DESC LIMIT greatest(toUInt64OrDefault(${topn:singlequote}, toUInt64(8)), 1)\n)",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "description": "How much of all traffic in the range the Top N items make up.",
+      "id": 2,
+      "title": "Share of total",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "percent",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT round(100 * sumIf(traffic, rn <= greatest(toUInt64OrDefault(${topn:singlequote}, toUInt64(8)), 1)) / greatest(sum(traffic), 1), 1) AS share\nFROM (\n  SELECT traffic, row_number() OVER (ORDER BY traffic DESC) AS rn FROM (\n    SELECT multiIf(\n      ${by:singlequote} = 'src', ipToStr(src_addr, etype),\n      ${by:singlequote} = 'dst', ipToStr(dst_addr, etype),\n      ${by:singlequote} = 'pair', concat(ipToStr(src_addr, etype), ' → ', ipToStr(dst_addr, etype)),\n      ${by:singlequote} = 'service', concat(\n      ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n      '/',\n      multiIf(\n        nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n        nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n        dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n        src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n        concat('port-', toString(if(dst_port > 0, dst_port, src_port))))),\n      ${by:singlequote} = 'proto', multiIf(proto = 6, 'TCP', proto = 17, 'UDP', proto = 1, 'ICMP', proto = 58, 'ICMPv6', proto = 47, 'GRE',\n      ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))),\n      ${by:singlequote} = 'exporter', ipToStr(sampler_address, etype),\n      ipToStr(src_addr, etype)) AS item, sum(bytes_norm) AS traffic\n    FROM $table\n    WHERE $timeFilter\n      AND (\n        ${scope:singlequote} = 'all'\n        OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n        OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n      )\n      AND (${exporter:singlequote} = 'All' OR ipToStr(sampler_address, etype) = ${exporter:singlequote})\n      AND (${src_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${src_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n          AND arrayExists(c -> isIPAddressInRange(ipToStr(src_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', '')))))))\n      AND (${dst_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${dst_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n          AND arrayExists(c -> isIPAddressInRange(ipToStr(dst_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', '')))))))\n    GROUP BY item\n  )\n)",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "description": "How many distinct items (for the chosen 'Rank by') were seen in the range.",
+      "id": 3,
+      "title": "Items ranked",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "short",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT uniqExact(multiIf(\n      ${by:singlequote} = 'src', ipToStr(src_addr, etype),\n      ${by:singlequote} = 'dst', ipToStr(dst_addr, etype),\n      ${by:singlequote} = 'pair', concat(ipToStr(src_addr, etype), ' → ', ipToStr(dst_addr, etype)),\n      ${by:singlequote} = 'service', concat(\n      ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n      '/',\n      multiIf(\n        nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n        nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n        dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n        src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n        concat('port-', toString(if(dst_port > 0, dst_port, src_port))))),\n      ${by:singlequote} = 'proto', multiIf(proto = 6, 'TCP', proto = 17, 'UDP', proto = 1, 'ICMP', proto = 58, 'ICMPv6', proto = 47, 'GRE',\n      ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))),\n      ${by:singlequote} = 'exporter', ipToStr(sampler_address, etype),\n      ipToStr(src_addr, etype))) AS items\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND (${exporter:singlequote} = 'All' OR ipToStr(sampler_address, etype) = ${exporter:singlequote})\n  AND (${src_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${src_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n      AND arrayExists(c -> isIPAddressInRange(ipToStr(src_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', '')))))))\n  AND (${dst_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${dst_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n      AND arrayExists(c -> isIPAddressInRange(ipToStr(dst_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', '')))))))",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "description": "All traffic in the range after the Direction / Exporter / CIDR filters.",
+      "id": 4,
+      "title": "Total traffic",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "decbytes",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT sum(bytes_norm) AS total\nFROM $table\nWHERE $timeFilter\n  AND (\n    ${scope:singlequote} = 'all'\n    OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n    OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n  )\n  AND (${exporter:singlequote} = 'All' OR ipToStr(sampler_address, etype) = ${exporter:singlequote})\n  AND (${src_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${src_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n      AND arrayExists(c -> isIPAddressInRange(ipToStr(src_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', '')))))))\n  AND (${dst_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${dst_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n      AND arrayExists(c -> isIPAddressInRange(ipToStr(dst_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', '')))))))",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "id": 5,
+      "type": "bargauge",
+      "title": "Top N by traffic",
+      "description": "Biggest items by data volume (click an item in the details table below to drill down). 'Rank by', Top N (default 8), Direction, Exporter and the Source / Destination CIDR filters are at the top of the page.",
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "color": {
+            "mode": "continuous-BlPu"
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "valueMode": "color",
+        "namePlacement": "left",
+        "sizing": "auto",
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "reduceOptions": {
+          "calcs": [],
+          "fields": "/^traffic$/",
+          "values": true
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT item, traffic FROM (\n  SELECT multiIf(\n        ${by:singlequote} = 'src', ipToStr(src_addr, etype),\n        ${by:singlequote} = 'dst', ipToStr(dst_addr, etype),\n        ${by:singlequote} = 'pair', concat(ipToStr(src_addr, etype), ' → ', ipToStr(dst_addr, etype)),\n        ${by:singlequote} = 'service', concat(\n        ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n        '/',\n        multiIf(\n          nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n          nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n          dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n          src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n          concat('port-', toString(if(dst_port > 0, dst_port, src_port))))),\n        ${by:singlequote} = 'proto', multiIf(proto = 6, 'TCP', proto = 17, 'UDP', proto = 1, 'ICMP', proto = 58, 'ICMPv6', proto = 47, 'GRE',\n        ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))),\n        ${by:singlequote} = 'exporter', ipToStr(sampler_address, etype),\n        ipToStr(src_addr, etype)) AS item, sum(bytes_norm) AS traffic, sum(packets_norm) AS packets, count() AS flows,\n         any(concat(multiIf(\n        ${by:singlequote} = 'src', concat('/d/flow-ip-lookup?var-role=any&var-ip=', encodeURLComponent(ipToStr(src_addr, etype))),\n        ${by:singlequote} = 'dst', concat('/d/flow-ip-lookup?var-role=any&var-ip=', encodeURLComponent(ipToStr(dst_addr, etype))),\n        ${by:singlequote} = 'pair', concat('/d/flow-sankey?var-dimension=src_port&var-src_net=', encodeURLComponent(concat(ipToStr(src_addr, etype), if(etype = 2048, '/32', '/128'))),\n                                           '&var-dst_net=', encodeURLComponent(concat(ipToStr(dst_addr, etype), if(etype = 2048, '/32', '/128')))),\n        ${by:singlequote} = 'exporter', concat('/d/flow-traffic-overview?var-exporter=', encodeURLComponent(ipToStr(sampler_address, etype))),\n        '#'),\n      if(${by:singlequote} IN ('src', 'dst', 'pair', 'exporter'), concat('&from=', toString($from * 1000), '&to=', toString($to * 1000)), ''))) AS link_url\n  FROM $table\n  WHERE $timeFilter\n    AND (\n      ${scope:singlequote} = 'all'\n      OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n      OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n    )\n    AND (${exporter:singlequote} = 'All' OR ipToStr(sampler_address, etype) = ${exporter:singlequote})\n    AND (${src_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${src_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n        AND arrayExists(c -> isIPAddressInRange(ipToStr(src_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', '')))))))\n    AND (${dst_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${dst_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n        AND arrayExists(c -> isIPAddressInRange(ipToStr(dst_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', '')))))))\n  GROUP BY item\n)\nORDER BY traffic DESC\nLIMIT greatest(toUInt64OrDefault(${topn:singlequote}, toUInt64(8)), 1)",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "id": 6,
+      "type": "timeseries",
+      "title": "Rate of the Top N",
+      "description": "Bits per second over time for the same Top N items.",
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "bps",
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "bars",
+            "fillOpacity": 40,
+            "lineWidth": 1,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "time_series",
+          "query": "SELECT t, item, rate\nFROM (\n  SELECT t, item, rate, dense_rank() OVER (ORDER BY tot DESC) AS rk\n  FROM (\n    SELECT t, item, rate, sum(rate) OVER (PARTITION BY item) AS tot\n    FROM (\n      SELECT $timeSeries AS t, multiIf(\n      ${by:singlequote} = 'src', ipToStr(src_addr, etype),\n      ${by:singlequote} = 'dst', ipToStr(dst_addr, etype),\n      ${by:singlequote} = 'pair', concat(ipToStr(src_addr, etype), ' → ', ipToStr(dst_addr, etype)),\n      ${by:singlequote} = 'service', concat(\n      ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n      '/',\n      multiIf(\n        nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n        nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n        dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n        src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n        concat('port-', toString(if(dst_port > 0, dst_port, src_port))))),\n      ${by:singlequote} = 'proto', multiIf(proto = 6, 'TCP', proto = 17, 'UDP', proto = 1, 'ICMP', proto = 58, 'ICMPv6', proto = 47, 'GRE',\n      ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))),\n      ${by:singlequote} = 'exporter', ipToStr(sampler_address, etype),\n      ipToStr(src_addr, etype)) AS item, sum(bytes_norm) * 8 / $interval AS rate\n      FROM $table\n      WHERE $timeFilter\n        AND (\n          ${scope:singlequote} = 'all'\n          OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n          OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n        )\n        AND (${exporter:singlequote} = 'All' OR ipToStr(sampler_address, etype) = ${exporter:singlequote})\n        AND (${src_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${src_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n            AND arrayExists(c -> isIPAddressInRange(ipToStr(src_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', '')))))))\n        AND (${dst_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${dst_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n            AND arrayExists(c -> isIPAddressInRange(ipToStr(dst_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', '')))))))\n      GROUP BY t, item\n    )\n  )\n)\nWHERE rk <= greatest(toUInt64OrDefault(${topn:singlequote}, toUInt64(8)), 1)\nORDER BY t",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ]
+    },
+    {
+      "datasource": "ClickHouse",
+      "id": 7,
+      "type": "table",
+      "title": "Top N details",
+      "description": "Same ranking with packets, flow records, share of total and average bytes per flow. Click an item: IP rankings open IP Lookup, conversations open the Sankey (ports) for that pair, exporters open Traffic Overview; service / protocol rows have no link.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "No traffic in this range",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "item"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Item"
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Drill down (IP Lookup / Sankey / Overview)",
+                    "url": "${__data.fields.link_url:raw}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "link_url"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "traffic"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Traffic"
+              },
+              {
+                "id": "unit",
+                "value": "decbytes"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge",
+                  "valueDisplayMode": "text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "packets"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Packets"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "flows"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Flows"
+              },
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "share_pct"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Share"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "avg_flow"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Avg bytes / flow"
+              },
+              {
+                "id": "unit",
+                "value": "decbytes"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Traffic"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "database": "default",
+          "dateColDataType": "date",
+          "dateTimeColDataType": "time_received_ns",
+          "dateTimeType": "DATETIME64",
+          "format": "table",
+          "query": "SELECT item, traffic, packets, flows, link_url,\n       round(100 * traffic / greatest(sum(traffic) OVER (), 1), 2) AS share_pct,\n       round(traffic / greatest(flows, 1)) AS avg_flow\nFROM (\n  SELECT multiIf(\n        ${by:singlequote} = 'src', ipToStr(src_addr, etype),\n        ${by:singlequote} = 'dst', ipToStr(dst_addr, etype),\n        ${by:singlequote} = 'pair', concat(ipToStr(src_addr, etype), ' → ', ipToStr(dst_addr, etype)),\n        ${by:singlequote} = 'service', concat(\n        ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), toString(proto)),\n        '/',\n        multiIf(\n          nullIf(dictGetString('dictionaries.services', 'name', toUInt64(dst_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(dst_port)),\n          nullIf(dictGetString('dictionaries.services', 'name', toUInt64(src_port)), '') != '', dictGetString('dictionaries.services', 'name', toUInt64(src_port)),\n          dst_port > 0 AND dst_port < 1024, concat('port-', toString(dst_port)),\n          src_port > 0 AND src_port < 1024, concat('port-', toString(src_port)),\n          concat('port-', toString(if(dst_port > 0, dst_port, src_port))))),\n        ${by:singlequote} = 'proto', multiIf(proto = 6, 'TCP', proto = 17, 'UDP', proto = 1, 'ICMP', proto = 58, 'ICMPv6', proto = 47, 'GRE',\n        ifNull(nullIf(dictGetString('dictionaries.protocols', 'name', toUInt64(proto)), ''), concat('Other(', toString(proto), ')'))),\n        ${by:singlequote} = 'exporter', ipToStr(sampler_address, etype),\n        ipToStr(src_addr, etype)) AS item, sum(bytes_norm) AS traffic, sum(packets_norm) AS packets, count() AS flows,\n         any(concat(multiIf(\n        ${by:singlequote} = 'src', concat('/d/flow-ip-lookup?var-role=any&var-ip=', encodeURLComponent(ipToStr(src_addr, etype))),\n        ${by:singlequote} = 'dst', concat('/d/flow-ip-lookup?var-role=any&var-ip=', encodeURLComponent(ipToStr(dst_addr, etype))),\n        ${by:singlequote} = 'pair', concat('/d/flow-sankey?var-dimension=src_port&var-src_net=', encodeURLComponent(concat(ipToStr(src_addr, etype), if(etype = 2048, '/32', '/128'))),\n                                           '&var-dst_net=', encodeURLComponent(concat(ipToStr(dst_addr, etype), if(etype = 2048, '/32', '/128')))),\n        ${by:singlequote} = 'exporter', concat('/d/flow-traffic-overview?var-exporter=', encodeURLComponent(ipToStr(sampler_address, etype))),\n        '#'),\n      if(${by:singlequote} IN ('src', 'dst', 'pair', 'exporter'), concat('&from=', toString($from * 1000), '&to=', toString($to * 1000)), ''))) AS link_url\n  FROM $table\n  WHERE $timeFilter\n    AND (\n      ${scope:singlequote} = 'all'\n      OR (etype = 2048 AND ${scope:singlequote} = 'ew' AND isRfc1918OrCgnat(src_addr) AND isRfc1918OrCgnat(dst_addr))\n      OR (etype = 2048 AND ${scope:singlequote} = 'ns' AND isRfc1918OrCgnat(src_addr) != isRfc1918OrCgnat(dst_addr))\n    )\n    AND (${exporter:singlequote} = 'All' OR ipToStr(sampler_address, etype) = ${exporter:singlequote})\n    AND (${src_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${src_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n        AND arrayExists(c -> isIPAddressInRange(ipToStr(src_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${src_net:singlequote}, ' ', '')))))))\n    AND (${dst_net:singlequote} = '' OR (throwIf(NOT arrayAll(t -> (isIPv4String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 32) OR (isIPv6String(splitByChar('/', t)[1]) AND toUInt16OrDefault(splitByChar('/', t)[2], 999) <= 128), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', ''))))), concat('Invalid CIDR in the filter: ', ${dst_net:singlequote}, ' - use e.g. 10.1.0.0/16 or 10.1.2.3, comma separated for several')) = 0\n        AND arrayExists(c -> isIPAddressInRange(ipToStr(dst_addr, etype), c), arrayMap(t -> if(position(t, '/') = 0, concat(t, if(position(t, ':') > 0, '/128', '/32')), t), arrayFilter(t -> t != '', splitByChar(',', replaceAll(${dst_net:singlequote}, ' ', '')))))))\n  GROUP BY item\n)\nORDER BY traffic DESC\nLIMIT greatest(toUInt64OrDefault(${topn:singlequote}, toUInt64(8)), 1)",
+          "refId": "A",
+          "table": "flows_raw"
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "type": "text",
+      "title": "",
+      "transparent": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "options": {
+        "mode": "html",
+        "code": {
+          "language": "html",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<style>[data-testid='table'] td,div[role='gridcell'],.table-panel-tables-wrap td,td[role='cell']{user-select:text!important;-webkit-user-select:text!important;-moz-user-select:text!important;}</style>"
+      }
+    }
+  ]
+}

@@ -104,6 +104,7 @@ UI: `http://<host-ip>:3030` (see `GRAFANA_ADMIN_*` in `.env`; default `admin`/`a
 | Dashboard | Path | Notes |
 |-----------|------|-------|
 | **Traffic Overview** | `/d/flow-traffic-overview` | Totals, bps trend, L4/app pies, Top sources/destinations/services/**AS**; Direction = All / East-West / North-South; **Top N** default 8 |
+| **Traffic Top N** | `/d/flow-top-n` | Rank anything by traffic: **Rank by** Source IP / Destination IP / Conversation / Service / Protocol / Exporter; **Top N** default 8 (type any number); Direction + Exporter + **Source / Destination CIDR** filters (one or several, comma separated; a bare IP = /32); bars, rate chart and a details table (packets, flows, share, avg bytes/flow) whose items are **clickable** (IP → IP Lookup, conversation → Sankey ports for that pair, exporter → Traffic Overview) |
 | **IP Flow Lookup** | `/d/flow-ip-lookup` | Single IP: inbound/outbound, inferred apps, Flow summary; Role = Any / Outbound / Inbound |
 | **Traffic Sankey** | `/d/flow-sankey` | Dimension + exporter/protocol/port/CIDR filters; Top N / Detail rows default 8 |
 | **Server Status** | `/d/server-status` | Host load/memory/disk (via ClickHouse's own metrics, no node_exporter); Kafka consumption rate; goflow2 collection rate; Prometheus scrape target status |
