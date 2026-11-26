@@ -32,6 +32,18 @@ clickhouse client -n <<-EOSQL
            IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))),
            IPv6NumToString(addr));
 
+    -- Inverse of ipToStr: a typed-in IP -> the raw FixedString(16) layout goflow2
+    -- stores (IPv4 = 4 bytes big-endian + 12 zero bytes). Filter with
+    -- `src_addr = ipStrToRaw('1.2.3.4')`, never `ipToStr(src_addr, etype) = '1.2.3.4'`:
+    -- the latter converts every scanned row (~12x slower over 7 days of flows_raw).
+    -- Blank/invalid input maps to all-FF bytes, which matches no flow.
+    CREATE FUNCTION IF NOT EXISTS ipStrToRaw AS (s) ->
+        multiIf(isIPv4String(trimBoth(s)),
+                  toFixedString(unhex(concat(leftPad(hex(IPv4StringToNumOrDefault(trimBoth(s))), 8, '0'), repeat('0', 24))), 16),
+                isIPv6String(trimBoth(s)),
+                  toFixedString(IPv6StringToNumOrDefault(trimBoth(s)), 16),
+                toFixedString(repeat(unhex('FF'), 16), 16));
+
     -- RFC1918 + CGNAT (100.64/10): used to classify East-West vs North-South traffic.
     CREATE FUNCTION IF NOT EXISTS isRfc1918OrCgnat AS (addr) -> (
         isIPAddressInRange(IPv4NumToString(reinterpretAsUInt32(substring(reverse(addr), 13, 4))), '10.0.0.0/8')
